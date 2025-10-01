@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { FileText, Users, ClipboardCheck, BookOpen } from 'lucide-react';
+import { FileText, Users, BookOpen } from 'lucide-react';
 import EmployeeDashboard from './components/pages/EmployeeDashboard';
 import TrainingDocumentsList from './components/pages/TrainingDocumentsList';
 import TeamLeaderView from './components/pages/TeamLeaderView';
-import SupervisorView from './components/pages/SupervisorView';
 import TrainingSignOffModal from './components/pages/TrainingSignOffModal';
 import AdminView from './components/pages/AdminView';
 
@@ -15,7 +14,6 @@ const TrainingModuleUI = () => {
     'employee-dashboard': { title: 'Employee Dashboard', component: <EmployeeDashboard />, icon: <Users size={20} /> },
     'documents': { title: 'Training Documents', component: <TrainingDocumentsList />, icon: <FileText size={20} /> },
     'team-leader': { title: 'Team Management', component: <TeamLeaderView />, icon: <Users size={20} /> },
-    'supervisor': { title: 'Verification', component: <SupervisorView />, icon: <ClipboardCheck size={20} /> },
     'sign-off': { title: 'Sign-off', component: <TrainingSignOffModal />, icon: <BookOpen size={20} /> },
     'admin': { title: 'Administration', component: <AdminView />, icon: <FileText size={20} /> },
   };
@@ -78,17 +76,6 @@ const TrainingModuleUI = () => {
             >
               <Users size={20} />
               <span>Team Management</span>
-            </button>
-            <button
-              onClick={() => setCurrentPage('supervisor')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                currentPage === 'supervisor'
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <ClipboardCheck size={20} />
-              <span>Verification</span>
             </button>
             <button
               onClick={() => setCurrentPage('admin')}

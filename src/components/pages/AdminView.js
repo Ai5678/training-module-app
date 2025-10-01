@@ -1,4 +1,5 @@
 import React from 'react';
+import { pendingVerifications } from '../../data/sampleData';
 
 const AdminView = () => (
   <div className="space-y-6">
@@ -94,44 +95,49 @@ const AdminView = () => (
       </div>
     </div>
 
-    {/* Recent Activity Log */}
+    {/* Pending Verifications */}
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">Recent Training Activity</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Pending Verifications</h2>
       </div>
-      <div className="p-6">
-        <div className="space-y-3">
-          <div className="flex items-start gap-3 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
-            <div className="flex-1">
-              <p className="text-gray-900">
-                <span className="font-medium">Alice Johnson</span> completed training on
-                <span className="font-medium"> GMP Basic Training (Rev 3.2)</span>
-              </p>
-              <p className="text-gray-500 text-xs mt-1">Verified by John Smith • 2 hours ago</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 text-sm">
-            <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
-            <div className="flex-1">
-              <p className="text-gray-900">
-                <span className="font-medium">Training document</span> updated:
-                <span className="font-medium"> Equipment Cleaning SOP</span> to Rev 2.2
-              </p>
-              <p className="text-gray-500 text-xs mt-1">By Admin • 5 hours ago • 12 employees need retraining</p>
-            </div>
-          </div>
-          <div className="flex items-start gap-3 text-sm">
-            <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
-            <div className="flex-1">
-              <p className="text-gray-900">
-                <span className="font-medium">Team Leader Sarah</span> assigned training to
-                <span className="font-medium"> 5 employees</span>
-              </p>
-              <p className="text-gray-500 text-xs mt-1">For upcoming Batch BR-2025-045 • Yesterday</p>
-            </div>
-          </div>
-        </div>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revision</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee Signed</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {pendingVerifications.map((item) => (
+              <tr key={item.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.employee}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{item.docName}</td>
+                <td className="px-6 py-4 text-sm text-gray-600 font-mono">{item.revision}</td>
+                <td className="px-6 py-4 text-sm text-gray-600">{item.signedDate}</td>
+                <td className="px-6 py-4">
+                  <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                    Awaiting Verification
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                      Review
+                    </button>
+                    <button className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700">
+                      Verify
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
