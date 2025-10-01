@@ -1,5 +1,5 @@
 import React from 'react';
-import { pendingVerifications } from '../../data/sampleData';
+import { pendingVerifications, templateTrainingMappings } from '../../data/sampleData';
 
 const AdminView = () => (
   <div className="space-y-6">
@@ -41,56 +41,27 @@ const AdminView = () => (
       </div>
       <div className="p-6">
         <div className="space-y-4">
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-3">
+          {templateTrainingMappings.map((template) => (
+            <div key={template.id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Template: {template.templateName}</h3>
+                  <p className="text-sm text-gray-600 mt-1">Template ID: {template.templateId}</p>
+                </div>
+                <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
+              </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Template: Product ABC Manufacturing</h3>
-                <p className="text-sm text-gray-600 mt-1">Batch Record Template ID: TPL-001</p>
-              </div>
-              <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  GMP Basic Training (Rev 3.2)
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Equipment Cleaning SOP (Rev 2.1)
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Safety Protocol (Rev 4.0)
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Product ABC SOP (Rev 1.3)
-                </span>
+                <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
+                <div className="flex flex-wrap gap-2">
+                  {template.requiredTrainings.map((training, index) => (
+                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      {training.name} ({training.revision})
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="border border-gray-200 rounded-lg p-4">
-            <div className="flex justify-between items-start mb-3">
-              <div>
-                <h3 className="font-semibold text-gray-900">Template: Product XYZ Manufacturing</h3>
-                <p className="text-sm text-gray-600 mt-1">Batch Record Template ID: TPL-002</p>
-              </div>
-              <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
-              <div className="flex flex-wrap gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  GMP Basic Training (Rev 3.2)
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Safety Protocol (Rev 4.0)
-                </span>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                  Product XYZ SOP (Rev 2.0)
-                </span>
-              </div>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

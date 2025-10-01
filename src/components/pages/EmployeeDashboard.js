@@ -1,61 +1,46 @@
 import React from 'react';
-import { BookOpen, CheckCircle, Clock, AlertCircle, FileText, Eye } from 'lucide-react';
-import { pendingTrainings, completedTrainings } from '../../data/sampleData';
+import { CheckCircle, Clock, FileText, Eye } from 'lucide-react';
+import { pendingTrainings, completedTrainings, qualifiedTemplates } from '../../data/sampleData';
 
 const EmployeeDashboard = () => (
   <div className="space-y-6">
     <div className="flex justify-between items-center">
       <h1 className="text-2xl font-bold text-gray-800">My Training Dashboard</h1>
-      <div className="flex gap-2">
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-          <BookOpen size={18} />
-          My Qualifications
-        </button>
-      </div>
     </div>
 
     {/* Stats Cards */}
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <a href="#pending-training" className="bg-white p-6 rounded-lg shadow border-l-4 border-yellow-500 hover:shadow-lg transition-shadow cursor-pointer">
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm text-gray-600">Pending Training</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">2</p>
+            <p className="text-3xl font-bold text-gray-800 mt-1">{pendingTrainings.length}</p>
           </div>
           <Clock className="text-yellow-500" size={24} />
         </div>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+      </a>
+      <a href="#completed-training" className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500 hover:shadow-lg transition-shadow cursor-pointer">
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-sm text-gray-600">Completed</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">24</p>
+            <p className="text-sm text-gray-600">Completed Training</p>
+            <p className="text-3xl font-bold text-gray-800 mt-1">{completedTrainings.length}</p>
           </div>
           <CheckCircle className="text-green-500" size={24} />
         </div>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+      </a>
+      <a href="#qualified-templates" className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500 hover:shadow-lg transition-shadow cursor-pointer">
         <div className="flex justify-between items-start">
           <div>
             <p className="text-sm text-gray-600">Qualified Templates</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">5</p>
+            <p className="text-3xl font-bold text-gray-800 mt-1">{qualifiedTemplates.length}</p>
           </div>
           <FileText className="text-blue-500" size={24} />
         </div>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm text-gray-600">Due This Week</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">1</p>
-          </div>
-          <AlertCircle className="text-red-500" size={24} />
-        </div>
-      </div>
+      </a>
     </div>
 
     {/* Pending Trainings */}
-    <div className="bg-white rounded-lg shadow">
+    <div id="pending-training" className="bg-white rounded-lg shadow scroll-mt-6">
       <div className="p-6 border-b">
         <h2 className="text-lg font-semibold text-gray-800">Assigned Training</h2>
       </div>
@@ -98,10 +83,10 @@ const EmployeeDashboard = () => (
       </div>
     </div>
 
-    {/* Recent Completed Trainings */}
-    <div className="bg-white rounded-lg shadow">
+    {/* Completed Trainings */}
+    <div id="completed-training" className="bg-white rounded-lg shadow scroll-mt-6">
       <div className="p-6 border-b">
-        <h2 className="text-lg font-semibold text-gray-800">Recently Completed Training</h2>
+        <h2 className="text-lg font-semibold text-gray-800">Completed Training</h2>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full">
@@ -131,6 +116,23 @@ const EmployeeDashboard = () => (
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+
+    {/* Qualified Templates */}
+    <div id="qualified-templates" className="bg-white rounded-lg shadow scroll-mt-6">
+      <div className="p-6 border-b">
+        <h2 className="text-lg font-semibold text-gray-800">Qualified Templates</h2>
+      </div>
+      <div className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {qualifiedTemplates.map((template, index) => (
+            <div key={index} className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <CheckCircle className="text-blue-600 flex-shrink-0" size={16} />
+              <span className="text-sm text-gray-800">{template}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>
