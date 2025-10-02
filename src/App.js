@@ -8,14 +8,48 @@ import AdminView from './components/pages/AdminView';
 
 const TrainingModuleUI = () => {
   const [currentPage, setCurrentPage] = useState('employee-dashboard');
+  const [selectedTraining, setSelectedTraining] = useState(null);
+
+  // Navigation function that can also pass data
+  const navigateToSignOff = (trainingData) => {
+    setSelectedTraining(trainingData);
+    setCurrentPage('sign-off');
+  };
+
+  const navigateToPage = (pageName) => {
+    setCurrentPage(pageName);
+    if (pageName !== 'sign-off') {
+      setSelectedTraining(null);
+    }
+  };
 
   // Navigation
   const pages = {
-    'employee-dashboard': { title: 'Employee Dashboard', component: <EmployeeDashboard />, icon: <Users size={20} /> },
-    'documents': { title: 'Training Documents', component: <TrainingDocumentsList />, icon: <FileText size={20} /> },
-    'team-leader': { title: 'Team Management', component: <TeamLeaderView />, icon: <Users size={20} /> },
-    'sign-off': { title: 'Sign-off', component: <TrainingSignOffModal />, icon: <BookOpen size={20} /> },
-    'admin': { title: 'Administration', component: <AdminView />, icon: <FileText size={20} /> },
+    'employee-dashboard': { 
+      title: 'Employee Dashboard', 
+      component: <EmployeeDashboard onNavigateToSignOff={navigateToSignOff} />, 
+      icon: <Users size={20} /> 
+    },
+    'documents': { 
+      title: 'Training Documents', 
+      component: <TrainingDocumentsList />, 
+      icon: <FileText size={20} /> 
+    },
+    'team-leader': { 
+      title: 'Team Management', 
+      component: <TeamLeaderView />, 
+      icon: <Users size={20} /> 
+    },
+    'sign-off': { 
+      title: 'Sign-off', 
+      component: <TrainingSignOffModal trainingData={selectedTraining} onClose={() => navigateToPage('employee-dashboard')} />, 
+      icon: <BookOpen size={20} /> 
+    },
+    'admin': { 
+      title: 'Administration', 
+      component: <AdminView />, 
+      icon: <FileText size={20} /> 
+    },
   };
 
   return (
@@ -29,7 +63,7 @@ const TrainingModuleUI = () => {
         <nav className="p-4">
           <div className="space-y-1">
             <button
-              onClick={() => setCurrentPage('employee-dashboard')}
+              onClick={() => navigateToPage('employee-dashboard')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 currentPage === 'employee-dashboard'
                   ? 'bg-blue-50 text-blue-700 font-medium'
@@ -40,7 +74,7 @@ const TrainingModuleUI = () => {
               <span>My Dashboard</span>
             </button>
             <button
-              onClick={() => setCurrentPage('sign-off')}
+              onClick={() => navigateToPage('sign-off')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 currentPage === 'sign-off'
                   ? 'bg-blue-50 text-blue-700 font-medium'
@@ -56,7 +90,7 @@ const TrainingModuleUI = () => {
             </div>
             
             <button
-              onClick={() => setCurrentPage('documents')}
+              onClick={() => navigateToPage('documents')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 currentPage === 'documents'
                   ? 'bg-blue-50 text-blue-700 font-medium'
@@ -67,7 +101,7 @@ const TrainingModuleUI = () => {
               <span>Documents</span>
             </button>
             <button
-              onClick={() => setCurrentPage('team-leader')}
+              onClick={() => navigateToPage('team-leader')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 currentPage === 'team-leader'
                   ? 'bg-blue-50 text-blue-700 font-medium'
@@ -78,7 +112,7 @@ const TrainingModuleUI = () => {
               <span>Team Management</span>
             </button>
             <button
-              onClick={() => setCurrentPage('admin')}
+              onClick={() => navigateToPage('admin')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 currentPage === 'admin'
                   ? 'bg-blue-50 text-blue-700 font-medium'
