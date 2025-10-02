@@ -31,41 +31,6 @@ const AdminView = () => (
       </div>
     </div>
 
-    {/* Template-Training Mapping */}
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800">Template Training Requirements</h2>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-          Edit Mappings
-        </button>
-      </div>
-      <div className="p-6">
-        <div className="space-y-4">
-          {templateTrainingMappings.map((template) => (
-            <div key={template.id} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-semibold text-gray-900">Template: {template.templateName}</h3>
-                  <p className="text-sm text-gray-600 mt-1">Template ID: {template.templateId}</p>
-                </div>
-                <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
-                <div className="flex flex-wrap gap-2">
-                  {template.requiredTrainings.map((training, index) => (
-                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                      {training.name} ({training.revision})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-
     {/* Pending Verifications */}
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b">
@@ -109,6 +74,41 @@ const AdminView = () => (
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+
+    {/* Template-Training Mapping */}
+    <div className="bg-white rounded-lg shadow">
+      <div className="p-6 border-b flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-800">Template Training Requirements</h2>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          Edit Mappings
+        </button>
+      </div>
+      <div className="p-6">
+        <div className="space-y-4">
+          {templateTrainingMappings.map((template) => (
+            <div key={template.id} className="border border-gray-200 rounded-lg p-4">
+              <div className="flex justify-between items-start mb-3">
+                <div>
+                  <h3 className="font-semibold text-gray-900">Template: {template.templateName}</h3>
+                  <p className="text-sm text-gray-600 mt-1">Template ID: {template.templateId}</p>
+                </div>
+                <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
+                <div className="flex flex-wrap gap-2">
+                  {template.requiredTrainings.map((training, index) => (
+                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                      {training.name} ({training.revision})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   </div>
