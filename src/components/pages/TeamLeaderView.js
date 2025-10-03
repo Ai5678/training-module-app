@@ -1,16 +1,34 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { teamMembers } from '../../data/sampleData';
+import AssignTrainingModal from './AssignTrainingModal';
 
-const TeamLeaderView = () => (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-gray-800">Team Training Management</h1>
-      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-        <Plus size={18} />
-        Assign Training
-      </button>
-    </div>
+const TeamLeaderView = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [preSelectedUsers, setPreSelectedUsers] = useState([]);
+
+  const handleBulkAssign = () => {
+    setPreSelectedUsers([]);
+    setIsModalOpen(true);
+  };
+
+  const handleIndividualAssign = (user) => {
+    setPreSelectedUsers([user]);
+    setIsModalOpen(true);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Team Training Management</h1>
+        <button
+          onClick={handleBulkAssign}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Assign Training
+        </button>
+      </div>
 
     {/* Quick Stats */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -71,7 +89,10 @@ const TeamLeaderView = () => (
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700">
+                  <button
+                    onClick={() => handleIndividualAssign(member)}
+                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                  >
                     Assign Training
                   </button>
                 </td>
@@ -115,7 +136,15 @@ const TeamLeaderView = () => (
         </div>
       </div>
     </div>
+
+    {/* Assign Training Modal */}
+    <AssignTrainingModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      preSelectedUsers={preSelectedUsers}
+    />
   </div>
-);
+  );
+};
 
 export default TeamLeaderView;

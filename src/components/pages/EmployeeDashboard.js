@@ -105,6 +105,7 @@ const EmployeeDashboard = ({ onNavigateToSignOff }) => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revision</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Completed Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verified On</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verified By</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               </tr>
@@ -115,12 +116,20 @@ const EmployeeDashboard = ({ onNavigateToSignOff }) => {
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{training.docName}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{training.revision}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{training.completedDate}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{training.verifiedBy}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{training.verifiedDate || '-'}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{training.verifiedBy || '-'}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 flex items-center gap-1 w-fit">
-                      <CheckCircle size={12} />
-                      Verified
-                    </span>
+                    {training.verified ? (
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 flex items-center gap-1 w-fit">
+                        <CheckCircle size={12} />
+                        Verified
+                      </span>
+                    ) : (
+                      <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 flex items-center gap-1 w-fit">
+                        <Clock size={12} />
+                        Pending Verification
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
