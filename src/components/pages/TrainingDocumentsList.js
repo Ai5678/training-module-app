@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Filter, Plus, Upload, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save } from 'lucide-react';
 import { trainingDocs, employeeSignatures } from '../../data/sampleData';
+import AddDocumentModal from './AddDocumentModal';
 
 const TrainingDocumentsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +13,7 @@ const TrainingDocumentsList = () => {
   const [showSignaturesModal, setShowSignaturesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // Enhanced filter and search logic - now includes employee names
   const filteredDocs = trainingDocs.filter((doc) => {
@@ -71,6 +73,12 @@ const TrainingDocumentsList = () => {
     });
   };
 
+  const handleAddSuccess = (newDoc) => {
+    console.log('New document added successfully:', newDoc);
+    // TODO: Add the new document to the trainingDocs array
+    // This would typically update state or call an API
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -80,7 +88,10 @@ const TrainingDocumentsList = () => {
             <Upload size={18} />
             Sync from NAS
           </button>
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          >
             <Plus size={18} />
             Add Document
           </button>
@@ -455,6 +466,13 @@ const TrainingDocumentsList = () => {
           </div>
         </div>
       )}
+
+      {/* Add Document Modal */}
+      <AddDocumentModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSuccess={handleAddSuccess}
+      />
     </div>
   );
 };

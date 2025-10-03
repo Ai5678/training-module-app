@@ -22,46 +22,58 @@ export const qualifiedTemplates = [
 
 export const trainingDocs = [
   // Active versions
-  { 
-    id: 1, 
-    name: 'GMP Basic Training', 
-    category: 'Quality', 
-    currentRev: '3.2', 
-    lastUpdated: '2025-09-01', 
-    status: 'Active', 
+  {
+    id: 1,
+    name: 'GMP Basic Training',
+    category: 'Quality',
+    currentRev: '3.2',
+    lastUpdated: '2025-09-01',
+    effectiveDate: '2025-09-01',
+    status: 'Active',
     signedByCount: 8,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/gmp-training-3.2',
     relatedTemplates: [
       'DO1679: Adult Capnoxygen Mask',
       'DO1007: Oxy II EtCO2 Adult Subassembly SLF 8"',
       'DO1528: Baxter recon',
       'DO1674: OxyMask II Kid 7\'',
       'DO1862: OxyMask II Adult EtCO2 14", SLM 15\''
-    ]
+    ],
+    description: 'Comprehensive GMP training covering basic manufacturing practices',
+    author: 'Quality Department',
+    nasLocation: '\\\\SM-NAS\\Training\\QA\\GMP-Basic-Training-Rev-3.2.pdf'
   },
-  { 
-    id: 2, 
-    name: 'Equipment Cleaning SOP', 
-    category: 'Operations', 
-    currentRev: '2.1', 
-    lastUpdated: '2025-08-15', 
-    status: 'Active', 
+  {
+    id: 2,
+    name: 'Equipment Cleaning SOP',
+    category: 'Operations',
+    currentRev: '2.1',
+    lastUpdated: '2025-08-15',
+    effectiveDate: '2025-08-15',
+    status: 'Active',
     signedByCount: 5,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/equipment-cleaning-sop-2.1',
     relatedTemplates: [
       'DO1007: Oxy II EtCO2 Adult Subassembly SLF 8"',
       'DO1862: OxyMask II Adult EtCO2 14", SLM 15\''
-    ]
+    ],
+    description: 'Standard operating procedure for equipment cleaning and maintenance',
+    author: 'Operations Team',
+    nasLocation: '\\\\SM-NAS\\Training\\Operations\\Equipment-Cleaning-SOP-Rev-2.1.pdf'
   },
-  { 
-    id: 3, 
-    name: 'Safety Protocol', 
-    category: 'Safety', 
-    currentRev: '4.0', 
-    lastUpdated: '2025-07-20', 
-    status: 'Active', 
+  {
+    id: 3,
+    name: 'Safety Protocol',
+    category: 'Safety',
+    currentRev: '4.0',
+    lastUpdated: '2025-07-20',
+    effectiveDate: '2025-07-20',
+    status: 'Active',
     signedByCount: 6,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/safety-protocol-4.0',
     relatedTemplates: [
       'DO1679: Adult Capnoxygen Mask',
       'DO1007: Oxy II EtCO2 Adult Subassembly SLF 8"',
@@ -70,42 +82,48 @@ export const trainingDocs = [
       'DO1862: OxyMask II Adult EtCO2 14", SLM 15\''
     ]
   },
-  { 
-    id: 4, 
-    name: 'Cleanroom Procedures', 
-    category: 'Operations', 
-    currentRev: '2.5', 
-    lastUpdated: '2025-06-20', 
-    status: 'Active', 
+  {
+    id: 4,
+    name: 'Cleanroom Procedures',
+    category: 'Operations',
+    currentRev: '2.5',
+    lastUpdated: '2025-06-20',
+    effectiveDate: '2025-06-20',
+    status: 'Active',
     signedByCount: 4,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/cleanroom-procedures-2.5',
     relatedTemplates: [
       'DO1679: Adult Capnoxygen Mask',
       'DO1674: OxyMask II Kid 7\''
     ]
   },
-  { 
-    id: 5, 
-    name: 'Quality Control Basics', 
-    category: 'Quality', 
-    currentRev: '1.5', 
-    lastUpdated: '2025-08-15', 
-    status: 'Active', 
+  {
+    id: 5,
+    name: 'Quality Control Basics',
+    category: 'Quality',
+    currentRev: '1.5',
+    lastUpdated: '2025-08-15',
+    effectiveDate: '2025-08-15',
+    status: 'Active',
     signedByCount: 3,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/quality-control-basics-1.5',
     relatedTemplates: [
       'DO1528: Baxter recon'
     ]
   },
-  { 
-    id: 6, 
-    name: 'Documentation Standards', 
-    category: 'Quality', 
-    currentRev: '1.2', 
-    lastUpdated: '2025-06-05', 
-    status: 'Active', 
+  {
+    id: 6,
+    name: 'Documentation Standards',
+    category: 'Quality',
+    currentRev: '1.2',
+    lastUpdated: '2025-06-05',
+    effectiveDate: '2025-06-05',
+    status: 'Active',
     signedByCount: 5,
     expirationDate: null,
+    uniPointUrl: 'https://unipoint.example.com/docs/documentation-standards-1.2',
     relatedTemplates: [
       'DO1862: OxyMask II Adult EtCO2 14", SLM 15\''
     ]
