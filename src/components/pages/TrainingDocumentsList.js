@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Plus, Upload, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save } from 'lucide-react';
+import { Search, Filter, Plus, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save, Upload } from 'lucide-react';
 import { trainingDocs, employeeSignatures } from '../../data/sampleData';
 import AddDocumentModal from './AddDocumentModal';
 
@@ -83,19 +83,13 @@ const TrainingDocumentsList = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-800">Training Documents</h1>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-2">
-            <Upload size={18} />
-            Sync from NAS
-          </button>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-          >
-            <Plus size={18} />
-            Add Document
-          </button>
-        </div>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+        >
+          <Plus size={18} />
+          Add Document
+        </button>
       </div>
 
       {/* Search and Filter */}
