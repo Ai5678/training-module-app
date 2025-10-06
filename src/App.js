@@ -73,18 +73,6 @@ const TrainingModuleUI = () => {
               <Users size={20} />
               <span>My Dashboard</span>
             </button>
-            <button
-              onClick={() => navigateToPage('sign-off')}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                currentPage === 'sign-off'
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <BookOpen size={20} />
-              <span>Sign-off</span>
-            </button>
-            
             <div className="pt-4 pb-2">
               <p className="px-4 text-xs font-semibold text-gray-400 uppercase">Management</p>
             </div>
