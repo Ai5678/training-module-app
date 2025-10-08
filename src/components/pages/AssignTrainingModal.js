@@ -25,9 +25,6 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [], preSelect
       
       // Pre-select trainings based on missing trainings
       if (preSelectedTrainings.length > 0) {
-        console.log('Pre-selected trainings:', preSelectedTrainings);
-        console.log('Available training docs:', trainingDocs);
-        
         const trainingIds = preSelectedTrainings
           .map(training => {
             // Match by name and revision (handling both "Rev X.X" and "X.X" formats)
@@ -36,21 +33,13 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [], preSelect
               const revMatch = d.currentRev === training.revision || 
                               `Rev ${d.currentRev}` === training.revision ||
                               d.currentRev === training.revision.replace('Rev ', '');
-              console.log(`Checking ${d.name} (${d.currentRev}) against ${training.name} (${training.revision}): name=${nameMatch}, rev=${revMatch}`);
               return nameMatch && revMatch;
             });
-            
-            if (doc) {
-              console.log(`Found match: ${doc.name} with ID ${doc.id}`);
-            } else {
-              console.log(`No match found for: ${training.name} (${training.revision})`);
-            }
             
             return doc?.id;
           })
           .filter(Boolean);
         
-        console.log('Selected training IDs:', trainingIds);
         setSelectedTrainingIds(trainingIds);
       } else {
         setSelectedTrainingIds([]);
