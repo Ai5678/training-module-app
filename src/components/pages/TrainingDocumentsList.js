@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
-import { Search, Filter, Plus, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save, Upload } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Filter, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save, Upload, ChevronDown, ChevronRight } from 'lucide-react';
 import { trainingDocs, employeeSignatures } from '../../data/sampleData';
-import AddDocumentModal from './AddDocumentModal';
 
 const TrainingDocumentsList = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,29 +12,93 @@ const TrainingDocumentsList = () => {
   const [showSignaturesModal, setShowSignaturesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [expandedDocs, setExpandedDocs] = useState({});
 
-  // Enhanced filter and search logic - now includes employee names
-  const filteredDocs = trainingDocs.filter((doc) => {
-    // Check if search term matches document name, templates, or status
-    const matchesDocumentFields = 
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.relatedTemplates.some(template => 
-        template.toLowerCase().includes(searchTerm.toLowerCase())
-      ) ||
-      doc.status.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Check if search term matches any employee name who signed this document
-    const signatures = employeeSignatures[doc.id] || [];
-    const matchesEmployeeName = signatures.some(signature =>
-      signature.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    const matchesSearch = matchesDocumentFields || matchesEmployeeName;
-    const matchesStatus = statusFilter === 'all' || doc.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    return matchesSearch && matchesStatus;
-  });
+  // Group documents by name with active first, then archived
+  const groupedDocs = useMemo(() => {
+    // First, group by document name
+    const groups = {};
+    trainingDocs.forEach(doc => {
+      if (!groups[doc.name]) {
+        groups[doc.name] = [];
+      }
+      groups[doc.name].push(doc);
+    });
+
+    // Sort each group: Active first, then Archived by date (newest first)
+    Object.keys(groups).forEach(name => {
+      groups[name].sort((a, b) => {
+        if (a.status === 'Active' && b.status !== 'Active') return -1;
+        if (a.status !== 'Active' && b.status === 'Active') return 1;
+        // Both archived, sort by date
+        return new Date(b.lastUpdated) - new Date(a.lastUpdated);
+      });
+    });
+
+    return groups;
+  }, []);
+
+  // Filter and search logic with auto-expand
+  const filteredGroups = useMemo(() => {
+    const filtered = {};
+    const shouldExpand = {};
+
+    Object.keys(groupedDocs).forEach(docName => {
+      const versions = groupedDocs[docName];
+      
+      // Check if any version matches the search/filter
+      const matchingVersions = versions.filter(doc => {
+        // Check search term
+        const matchesDocumentFields = 
+          doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          doc.relatedTemplates.some(template => 
+            template.toLowerCase().includes(searchTerm.toLowerCase())
+          ) ||
+          doc.status.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const signatures = employeeSignatures[doc.id] || [];
+        const matchesEmployeeName = signatures.some(signature =>
+          signature.employeeName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        const matchesSearch = !searchTerm || matchesDocumentFields || matchesEmployeeName;
+        
+        // Check status filter
+        const matchesStatus = statusFilter === 'all' || doc.status.toLowerCase() === statusFilter.toLowerCase();
+        
+        return matchesSearch && matchesStatus;
+      });
+
+      if (matchingVersions.length > 0) {
+        filtered[docName] = matchingVersions;
+        
+        // Auto-expand if search matches an archived version
+        const hasArchivedMatch = matchingVersions.some((doc, idx) => 
+          idx > 0 && searchTerm // idx > 0 means it's not the active (first) one
+        );
+        if (hasArchivedMatch) {
+          shouldExpand[docName] = true;
+        }
+      }
+    });
+
+    // Apply auto-expand
+    setExpandedDocs(prev => ({ ...prev, ...shouldExpand }));
+
+    return filtered;
+  }, [groupedDocs, searchTerm, statusFilter]);
+
+  // Count total documents
+  const totalDocCount = useMemo(() => {
+    return Object.values(filteredGroups).reduce((sum, versions) => sum + versions.length, 0);
+  }, [filteredGroups]);
+
+  const toggleDocExpansion = (docName) => {
+    setExpandedDocs(prev => ({
+      ...prev,
+      [docName]: !prev[docName]
+    }));
+  };
 
   const handleTemplateClick = (templates, docName) => {
     setSelectedTemplates({ templates, docName });
@@ -73,23 +136,13 @@ const TrainingDocumentsList = () => {
     });
   };
 
-  const handleAddSuccess = (newDoc) => {
-    console.log('New document added successfully:', newDoc);
-    // TODO: Add the new document to the trainingDocs array
-    // This would typically update state or call an API
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Training Documents</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-        >
-          <Plus size={18} />
-          Add Document
-        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Training Documents</h1>
+          <p className="text-sm text-gray-600 mt-1">Automatically synced from UniPoint</p>
+        </div>
       </div>
 
       {/* Search and Filter */}
@@ -143,7 +196,7 @@ const TrainingDocumentsList = () => {
 
       {/* Results count */}
       <div className="text-sm text-gray-600">
-        Showing {filteredDocs.length} of {trainingDocs.length} documents
+        Showing {Object.keys(filteredGroups).length} document{Object.keys(filteredGroups).length !== 1 ? 's' : ''} ({totalDocCount} total versions)
         {searchTerm && (
           <span className="ml-2 text-blue-600">
             • Searching for "{searchTerm}"
@@ -169,63 +222,155 @@ const TrainingDocumentsList = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredDocs.map((doc) => (
-                <tr key={doc.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{doc.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">{doc.category}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 font-mono">{doc.currentRev}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{doc.lastUpdated}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {doc.expirationDate || '-'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      doc.status === 'Active' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {doc.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button 
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                      onClick={() => handleSignaturesClick(doc.id, doc.name, doc.currentRev)}
-                    >
-                      <Users size={14} />
-                      {doc.signedByCount} employees
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <button 
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-                      onClick={() => handleTemplateClick(doc.relatedTemplates, doc.name)}
-                    >
-                      <FileText size={14} />
-                      {doc.relatedTemplates.length} templates
-                    </button>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button 
-                        className="p-1 hover:bg-gray-100 rounded" 
-                        title="View Document"
-                      >
-                        <Eye size={16} className="text-gray-600" />
-                      </button>
-                      <button 
-                        className="p-1 hover:bg-gray-100 rounded" 
-                        title="Edit Document"
-                        onClick={() => handleEditClick(doc)}
-                      >
-                        <Edit size={16} className="text-gray-600" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {Object.keys(filteredGroups).map((docName) => {
+                const versions = filteredGroups[docName];
+                const activeDoc = versions[0]; // First one is always active or the main one
+                const archivedVersions = versions.slice(1);
+                const isExpanded = expandedDocs[docName];
+
+                return (
+                  <React.Fragment key={docName}>
+                    {/* Active/Main Document Row */}
+                    <tr className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        <div className="flex items-center gap-2">
+                          {archivedVersions.length > 0 && (
+                            <button
+                              onClick={() => toggleDocExpansion(docName)}
+                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                              title={isExpanded ? 'Collapse' : 'Expand'}
+                            >
+                              {isExpanded ? (
+                                <ChevronDown size={16} className="text-gray-600" />
+                              ) : (
+                                <ChevronRight size={16} className="text-gray-600" />
+                              )}
+                            </button>
+                          )}
+                          <span>{activeDoc.name}</span>
+                          {archivedVersions.length > 0 && (
+                            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs">
+                              {archivedVersions.length} archived
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">{activeDoc.category}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 font-mono">{activeDoc.currentRev}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{activeDoc.lastUpdated}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {activeDoc.expirationDate || '-'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          activeDoc.status === 'Active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {activeDoc.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button 
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                          onClick={() => handleSignaturesClick(activeDoc.id, activeDoc.name, activeDoc.currentRev)}
+                        >
+                          <Users size={14} />
+                          {activeDoc.signedByCount} employees
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button 
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                          onClick={() => handleTemplateClick(activeDoc.relatedTemplates, activeDoc.name)}
+                        >
+                          <FileText size={14} />
+                          {activeDoc.relatedTemplates.length} templates
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2">
+                          <button 
+                            className="p-1 hover:bg-gray-100 rounded" 
+                            title="View Document"
+                          >
+                            <Eye size={16} className="text-gray-600" />
+                          </button>
+                          <button 
+                            className="p-1 hover:bg-gray-100 rounded" 
+                            title="Edit Document"
+                            onClick={() => handleEditClick(activeDoc)}
+                          >
+                            <Edit size={16} className="text-gray-600" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Archived Versions Rows (Expandable) */}
+                    {isExpanded && archivedVersions.map((doc) => (
+                      <tr key={doc.id} className="bg-gray-50 hover:bg-gray-100">
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          <div className="flex items-center gap-2 pl-8 border-l-2 border-gray-300 ml-2">
+                            <Archive size={14} className="text-gray-500" />
+                            <span className="text-gray-600">{doc.name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">{doc.category}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 font-mono">{doc.currentRev}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">{doc.lastUpdated}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {doc.expirationDate || '-'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                            {doc.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button 
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                            onClick={() => handleSignaturesClick(doc.id, doc.name, doc.currentRev)}
+                          >
+                            <Users size={14} />
+                            {doc.signedByCount} employees
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <button 
+                            className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
+                            onClick={() => handleTemplateClick(doc.relatedTemplates, doc.name)}
+                          >
+                            <FileText size={14} />
+                            {doc.relatedTemplates.length} templates
+                          </button>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-2">
+                            <button 
+                              className="p-1 hover:bg-gray-100 rounded" 
+                              title="View Document"
+                            >
+                              <Eye size={16} className="text-gray-600" />
+                            </button>
+                            <button 
+                              className="p-1 hover:bg-gray-100 rounded" 
+                              title="Edit Document"
+                              onClick={() => handleEditClick(doc)}
+                            >
+                              <Edit size={16} className="text-gray-600" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -461,12 +606,6 @@ const TrainingDocumentsList = () => {
         </div>
       )}
 
-      {/* Add Document Modal */}
-      <AddDocumentModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={handleAddSuccess}
-      />
     </div>
   );
 };
