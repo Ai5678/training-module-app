@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { X, Search, Users, FileText, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { trainingDocs, teamMembers } from '../../data/sampleData';
+import { X, Search, Users, FileText, Calendar, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
+import { trainingDocs, teamMembers, templateTrainingMappings } from '../../data/sampleData';
 
 const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
   const [selectedUserIds, setSelectedUserIds] = useState(preSelectedUsers.map(u => u.id));
@@ -13,6 +13,9 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [trainingSearchTerm, setTrainingSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [selectionMode, setSelectionMode] = useState('individual'); // 'individual' or 'template'
+  const [selectedTemplateIds, setSelectedTemplateIds] = useState([]);
+  const [expandedTemplates, setExpandedTemplates] = useState({});
 
   // Calculate due date based on selection
   const calculateDueDate = () => {
@@ -71,6 +74,48 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
         ? prev.filter(id => id !== trainingId)
         : [...prev, trainingId]
     );
+  };
+
+  // Toggle template selection
+  const toggleTemplate = (templateId) => {
+    setSelectedTemplateIds(prev => {
+      const isSelected = prev.includes(templateId);
+      const template = templateTrainingMappings.find(t => t.templateId === templateId);
+      
+      if (template) {
+        // Get training IDs for this template
+        const templateTrainingIds = template.requiredTrainings
+          .map(reqTraining => {
+            const doc = trainingDocs.find(d => d.name === reqTraining.name && d.currentRev === reqTraining.revision);
+            return doc?.id;
+          })
+          .filter(Boolean);
+
+        if (isSelected) {
+          // Deselect template and its trainings
+          setSelectedTrainingIds(prevTrainings =>
+            prevTrainings.filter(id => !templateTrainingIds.includes(id))
+          );
+          return prev.filter(id => id !== templateId);
+        } else {
+          // Select template and its trainings
+          setSelectedTrainingIds(prevTrainings => [
+            ...new Set([...prevTrainings, ...templateTrainingIds])
+          ]);
+          return [...prev, templateId];
+        }
+      }
+      
+      return prev;
+    });
+  };
+
+  // Toggle template expansion
+  const toggleTemplateExpansion = (templateId) => {
+    setExpandedTemplates(prev => ({
+      ...prev,
+      [templateId]: !prev[templateId]
+    }));
   };
 
   // Select all users
@@ -225,54 +270,138 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
               </h3>
             </div>
 
-            <div className="flex gap-3 mb-3">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search training documents..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={trainingSearchTerm}
-                  onChange={(e) => setTrainingSearchTerm(e.target.value)}
-                />
-              </div>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            {/* Selection Mode Toggle */}
+            <div className="mb-4 flex gap-2 bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setSelectionMode('individual')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectionMode === 'individual'
+                    ? 'bg-white text-blue-600 shadow'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>
-                    {cat === 'all' ? 'All Categories' : cat}
-                  </option>
-                ))}
-              </select>
+                Select Individual Documents
+              </button>
+              <button
+                onClick={() => setSelectionMode('template')}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  selectionMode === 'template'
+                    ? 'bg-white text-blue-600 shadow'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                Select by Template
+              </button>
             </div>
 
-            <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
-              {filteredTrainings.map(training => (
-                <label
-                  key={training.id}
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTrainingIds.includes(training.id)}
-                    onChange={() => toggleTraining(training.id)}
-                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                  />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{training.name}</p>
-                    <p className="text-xs text-gray-600">
-                      <span className="font-mono">{training.currentRev}</span> • {training.category} • {training.relatedTemplates.length} templates
-                    </p>
+            {selectionMode === 'individual' ? (
+              <>
+                <div className="flex gap-3 mb-3">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                    <input
+                      type="text"
+                      placeholder="Search training documents..."
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      value={trainingSearchTerm}
+                      onChange={(e) => setTrainingSearchTerm(e.target.value)}
+                    />
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                    {training.status}
-                  </span>
-                </label>
-              ))}
-            </div>
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>
+                        {cat === 'all' ? 'All Categories' : cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                  {filteredTrainings.map(training => (
+                    <label
+                      key={training.id}
+                      className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedTrainingIds.includes(training.id)}
+                        onChange={() => toggleTraining(training.id)}
+                        className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">{training.name}</p>
+                        <p className="text-xs text-gray-600">
+                          <span className="font-mono">{training.currentRev}</span> • {training.category} • {training.relatedTemplates.length} templates
+                        </p>
+                      </div>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                        {training.status}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="mb-3">
+                  <p className="text-sm text-gray-600 mb-2">
+                    Select templates to automatically include all related training documents
+                  </p>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                  {templateTrainingMappings.map(template => {
+                    const isExpanded = expandedTemplates[template.templateId];
+                    const isSelected = selectedTemplateIds.includes(template.templateId);
+                    
+                    return (
+                      <div key={template.id} className="border-b last:border-b-0">
+                        <div className="flex items-center gap-3 p-3 hover:bg-gray-50">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleTemplate(template.templateId)}
+                            className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                          />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">
+                              {template.templateId}: {template.templateName}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {template.requiredTrainings.length} training document{template.requiredTrainings.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => toggleTemplateExpansion(template.templateId)}
+                            className="p-1 hover:bg-gray-200 rounded"
+                          >
+                            {isExpanded ? (
+                              <ChevronUp size={16} className="text-gray-600" />
+                            ) : (
+                              <ChevronDown size={16} className="text-gray-600" />
+                            )}
+                          </button>
+                        </div>
+                        
+                        {isExpanded && (
+                          <div className="px-3 pb-3 pl-12 space-y-1 bg-gray-50">
+                            {template.requiredTrainings.map((training, idx) => (
+                              <div key={idx} className="text-xs text-gray-700 py-1">
+                                • {training.name} ({training.revision})
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Step 3: Set Due Date */}
@@ -392,7 +521,14 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
               </div>
               <div className="flex items-center gap-2">
                 <FileText size={16} className="text-blue-600" />
-                <span>{selectedTrainingIds.length} training document{selectedTrainingIds.length !== 1 ? 's' : ''}</span>
+                <span>
+                  {selectedTrainingIds.length} training document{selectedTrainingIds.length !== 1 ? 's' : ''}
+                  {selectionMode === 'template' && selectedTemplateIds.length > 0 && (
+                    <span className="text-xs text-gray-600 ml-1">
+                      (from {selectedTemplateIds.length} template{selectedTemplateIds.length !== 1 ? 's' : ''})
+                    </span>
+                  )}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-blue-600" />
