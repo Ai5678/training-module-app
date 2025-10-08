@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, Users, FileText, Calendar, AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 import { trainingDocs, teamMembers, templateTrainingMappings } from '../../data/sampleData';
 
-const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
-  const [selectedUserIds, setSelectedUserIds] = useState(preSelectedUsers.map(u => u.id));
+const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [], preSelectedTrainings = [] }) => {
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
   const [selectedTrainingIds, setSelectedTrainingIds] = useState([]);
   const [dueDateOption, setDueDateOption] = useState('14days');
   const [customDueDate, setCustomDueDate] = useState('');
@@ -16,6 +16,47 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
   const [selectionMode, setSelectionMode] = useState('individual'); // 'individual' or 'template'
   const [selectedTemplateIds, setSelectedTemplateIds] = useState([]);
   const [expandedTemplates, setExpandedTemplates] = useState({});
+
+  // Reset and update state when modal opens or pre-selections change
+  React.useEffect(() => {
+    if (isOpen) {
+      // Update selected users
+      setSelectedUserIds(preSelectedUsers.map(u => u.id));
+      
+      // Pre-select trainings based on missing trainings
+      if (preSelectedTrainings.length > 0) {
+        console.log('Pre-selected trainings:', preSelectedTrainings);
+        console.log('Available training docs:', trainingDocs);
+        
+        const trainingIds = preSelectedTrainings
+          .map(training => {
+            // Match by name and revision (handling both "Rev X.X" and "X.X" formats)
+            const doc = trainingDocs.find(d => {
+              const nameMatch = d.name === training.name;
+              const revMatch = d.currentRev === training.revision || 
+                              `Rev ${d.currentRev}` === training.revision ||
+                              d.currentRev === training.revision.replace('Rev ', '');
+              console.log(`Checking ${d.name} (${d.currentRev}) against ${training.name} (${training.revision}): name=${nameMatch}, rev=${revMatch}`);
+              return nameMatch && revMatch;
+            });
+            
+            if (doc) {
+              console.log(`Found match: ${doc.name} with ID ${doc.id}`);
+            } else {
+              console.log(`No match found for: ${training.name} (${training.revision})`);
+            }
+            
+            return doc?.id;
+          })
+          .filter(Boolean);
+        
+        console.log('Selected training IDs:', trainingIds);
+        setSelectedTrainingIds(trainingIds);
+      } else {
+        setSelectedTrainingIds([]);
+      }
+    }
+  }, [isOpen, preSelectedUsers, preSelectedTrainings]);
 
   // Calculate due date based on selection
   const calculateDueDate = () => {
@@ -239,18 +280,6 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
                     <p className="text-sm font-medium text-gray-900">{user.name}</p>
                     <p className="text-xs text-gray-600">{user.role} • {user.pending} pending trainings</p>
                   </div>
-                  <div className="flex gap-1 flex-wrap max-w-xs">
-                    {user.qualified.slice(0, 2).map((template, idx) => (
-                      <span key={idx} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
-                        {template.split(':')[0]}
-                      </span>
-                    ))}
-                    {user.qualified.length > 2 && (
-                      <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
-                        +{user.qualified.length - 2}
-                      </span>
-                    )}
-                  </div>
                 </label>
               ))}
             </div>
@@ -335,12 +364,9 @@ const AssignTrainingModal = ({ isOpen, onClose, preSelectedUsers = [] }) => {
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{training.name}</p>
                         <p className="text-xs text-gray-600">
-                          <span className="font-mono">{training.currentRev}</span> • {training.category} • {training.relatedTemplates.length} templates
+                          <span className="font-mono">{training.currentRev}</span> • {training.category}
                         </p>
                       </div>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                        {training.status}
-                      </span>
                     </label>
                   ))}
                 </div>

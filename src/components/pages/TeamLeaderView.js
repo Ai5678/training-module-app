@@ -15,15 +15,17 @@ const TeamLeaderView = () => {
   
   // Template filter for training gaps analysis
   const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [docSearchTerm, setDocSearchTerm] = useState('');
+  const [preSelectedTrainings, setPreSelectedTrainings] = useState([]);
 
   const handleBulkAssign = () => {
     setPreSelectedUsers([]);
+    setPreSelectedTrainings([]);
     setIsModalOpen(true);
   };
 
-  const handleIndividualAssign = (user) => {
+  const handleIndividualAssign = (user, missingTrainings = []) => {
     setPreSelectedUsers([user]);
+    setPreSelectedTrainings(missingTrainings);
     setIsModalOpen(true);
   };
 
@@ -67,23 +69,17 @@ const TeamLeaderView = () => {
       }
     }
 
-    // Apply search filters
+    // Apply search filter
     data = data.filter(member => {
       const matchesEmployeeSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                    member.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                    member.employeeId.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // If template is selected and doc search is active, filter by missing trainings
-      const matchesDocSearch = !selectedTemplate || !docSearchTerm || 
-                              (member.missingTrainings && member.missingTrainings.some(t => 
-                                t.name.toLowerCase().includes(docSearchTerm.toLowerCase())
-                              ));
-      
-      return matchesEmployeeSearch && matchesDocSearch;
+      return matchesEmployeeSearch;
     });
 
     return data;
-  }, [selectedTemplate, searchTerm, docSearchTerm]);
+  }, [selectedTemplate, searchTerm]);
 
   // Pagination logic
   const totalPages = Math.ceil(displayData.length / rowsPerPage);
@@ -95,7 +91,7 @@ const TeamLeaderView = () => {
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, selectedTemplate, docSearchTerm]);
+  }, [searchTerm, selectedTemplate]);
 
   return (
     <div className="space-y-6">
@@ -156,8 +152,8 @@ const TeamLeaderView = () => {
             </select>
           </div>
 
-          {/* Search Bars */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Search Bar */}
+          <div className="mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               <input
@@ -168,18 +164,6 @@ const TeamLeaderView = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {selectedTemplate && (
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="Search by training document..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={docSearchTerm}
-                  onChange={(e) => setDocSearchTerm(e.target.value)}
-                />
-              </div>
-            )}
           </div>
 
           {/* Summary Stats */}
@@ -190,7 +174,7 @@ const TeamLeaderView = () => {
               </p>
             </div>
           ) : (
-            (searchTerm || docSearchTerm) && (
+            searchTerm && (
               <p className="text-sm text-gray-600">
                 Found {displayData.length} employee{displayData.length !== 1 ? 's' : ''}
               </p>
@@ -262,7 +246,7 @@ const TeamLeaderView = () => {
                     </td>
                     <td className="px-6 py-4">
                       <button
-                        onClick={() => handleIndividualAssign(member)}
+                        onClick={() => handleIndividualAssign(member, member.missingTrainings || [])}
                         className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                       >
                         Assign Training
@@ -327,6 +311,7 @@ const TeamLeaderView = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         preSelectedUsers={preSelectedUsers}
+        preSelectedTrainings={preSelectedTrainings}
       />
 
       <QualifiedTemplatesModal
