@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { Search } from 'lucide-react';
 import { pendingVerifications, templateTrainingMappings } from '../../data/sampleData';
 
-const AdminView = () => (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h1 className="text-2xl font-bold text-gray-800">Training Administration</h1>
-    </div>
+const AdminView = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter templates based on search term
+  const filteredTemplates = useMemo(() => {
+    if (!searchTerm) return templateTrainingMappings;
+
+    return templateTrainingMappings.filter(template => {
+      const matchesTemplateName = template.templateName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                   template.templateId.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesTrainingDoc = template.requiredTrainings.some(training =>
+        training.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+
+      return matchesTemplateName || matchesTrainingDoc;
+    });
+  }, [searchTerm]);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Training Administration</h1>
+      </div>
 
     {/* System Stats */}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -79,39 +99,58 @@ const AdminView = () => (
 
     {/* Template-Training Mapping */}
     <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b flex justify-between items-center">
-        <h2 className="text-lg font-semibold text-gray-800">Template Training Requirements</h2>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-          Edit Mappings
-        </button>
+      <div className="p-6 border-b">
+        <h2 className="text-lg font-semibold text-gray-800 mb-4">Template Training Requirements</h2>
+        
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="text"
+            placeholder="Search by template name or training document..."
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {searchTerm && (
+          <p className="text-sm text-gray-600 mt-2">
+            Found {filteredTemplates.length} template{filteredTemplates.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
       <div className="p-6">
-        <div className="space-y-4">
-          {templateTrainingMappings.map((template) => (
-            <div key={template.id} className="border border-gray-200 rounded-lg p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
+        {filteredTemplates.length > 0 ? (
+          <div className="space-y-4">
+            {filteredTemplates.map((template) => (
+              <div key={template.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="mb-3">
                   <h3 className="font-semibold text-gray-900">Template: {template.templateName}</h3>
                   <p className="text-sm text-gray-600 mt-1">Template ID: {template.templateId}</p>
                 </div>
-                <button className="text-blue-600 hover:text-blue-700 text-sm">Edit</button>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
-                <div className="flex flex-wrap gap-2">
-                  {template.requiredTrainings.map((training, index) => (
-                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                      {training.name} ({training.revision})
-                    </span>
-                  ))}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 mb-2">Required Training Documents:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {template.requiredTrainings.map((training, index) => (
+                      <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                        {training.name} ({training.revision})
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No templates found matching "{searchTerm}"</p>
+          </div>
+        )}
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export default AdminView;
