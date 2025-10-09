@@ -1,9 +1,9 @@
 export const pendingTrainings = [
-  { id: 1, docName: 'GMP Basic Training', revision: 'Rev 3.2', assignedDate: '2025-09-15', dueDate: '2025-10-15', status: 'pending' },
   { id: 2, docName: 'Equipment Cleaning SOP', revision: 'Rev 2.1', assignedDate: '2025-09-20', dueDate: '2025-10-20', status: 'in-progress' },
 ];
 
 export const completedTrainings = [
+  { id: 1, docName: 'GMP Basic Training', revision: 'Rev 3.2', completedDate: '2025-08-28', verifiedDate: '2025-08-29', verifiedBy: 'John Smith', verified: true },
   { id: 3, docName: 'Safety Protocol', revision: 'Rev 4.0', completedDate: '2025-09-01', verifiedDate: '2025-09-02', verifiedBy: 'John Smith', verified: true },
   { id: 4, docName: 'Quality Control Basics', revision: 'Rev 1.5', completedDate: '2025-08-15', verifiedDate: '2025-08-17', verifiedBy: 'Jane Doe', verified: true },
   { id: 5, docName: 'Cleanroom Procedures', revision: 'Rev 2.5', completedDate: '2025-06-20', verifiedDate: '2025-06-21', verifiedBy: 'Jane Doe', verified: true },
@@ -14,10 +14,18 @@ export const completedTrainings = [
 
 export const qualifiedTemplates = [
   'DO1679: Adult Capnoxygen Mask',
-  'DO1007: Oxy II EtCO2 Adult Subassembly SLF 8"',
   'DO1528: Baxter recon',
-  'DO1674: OxyMask II Kid 7\'',
-  'DO1862: OxyMask II Adult EtCO2 14", SLM 15\''
+  'DO1674: OxyMask II Kid 7\''
+  // Employee HAS completed and verified:
+  // ✓ GMP Basic Training (Rev 3.2)
+  // ✓ Safety Protocol (Rev 4.0)
+  // ✓ Quality Control Basics (Rev 1.5)
+  // ✓ Cleanroom Procedures (Rev 2.5)
+  // ✓ Documentation Standards (Rev 1.2)
+  
+  // Employee is NOT qualified for (missing Equipment Cleaning SOP):
+  // ❌ DO1007: Oxy II EtCO2 Adult Subassembly SLF 8" (needs: GMP✓, Safety✓, Equipment Cleaning❌)
+  // ❌ DO1862: OxyMask II Adult EtCO2 14", SLM 15' (needs: GMP✓, Safety✓, Equipment Cleaning❌, Documentation✓)
 ];
 
 export const trainingDocs = [
