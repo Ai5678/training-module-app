@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save, Upload, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, Filter, Eye, Edit, X, FileText, Users, CheckCircle, Archive, Save, Upload, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react';
 import { trainingDocs, employeeSignatures } from '../../data/sampleData';
 
 const TrainingDocumentsList = () => {
@@ -13,6 +13,8 @@ const TrainingDocumentsList = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingDoc, setEditingDoc] = useState(null);
   const [expandedDocs, setExpandedDocs] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
 
   // Group documents by name with active first, then archived
   const groupedDocs = useMemo(() => {
@@ -136,13 +138,68 @@ const TrainingDocumentsList = () => {
     });
   };
 
+  const handleSyncWithUniPoint = async () => {
+    setIsSyncing(true);
+    try {
+      // Simulate API call to UniPoint
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Update last sync time
+      setLastSyncTime(new Date());
+      
+      // TODO: Implement actual UniPoint sync API call
+      console.log('Syncing with UniPoint...');
+      
+      // In a real implementation, you would:
+      // 1. Call API to fetch latest documents from UniPoint
+      // 2. Update the trainingDocs state/data
+      // 3. Show success notification
+    } catch (error) {
+      console.error('Sync failed:', error);
+      // TODO: Show error notification
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const formatLastSyncTime = () => {
+    if (!lastSyncTime) return 'Never';
+    
+    const now = new Date();
+    const diff = Math.floor((now - lastSyncTime) / 1000); // seconds
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} minutes ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return lastSyncTime.toLocaleDateString();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Training Documents</h1>
-          <p className="text-sm text-gray-600 mt-1">Automatically synced from UniPoint</p>
+          <p className="text-sm text-gray-600 mt-1">
+            Automatically synced from UniPoint
+            {lastSyncTime && (
+              <span className="ml-2 text-gray-500">
+                • Last synced: {formatLastSyncTime()}
+              </span>
+            )}
+          </p>
         </div>
+        <button
+          onClick={handleSyncWithUniPoint}
+          disabled={isSyncing}
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+            isSyncing
+              ? 'bg-gray-400 text-white cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          <RefreshCw size={18} className={isSyncing ? 'animate-spin' : ''} />
+          {isSyncing ? 'Syncing...' : 'Sync with UniPoint'}
+        </button>
       </div>
 
       {/* Search and Filter */}
