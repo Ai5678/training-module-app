@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { FileText, Users, BookOpen } from 'lucide-react';
+import { FileText, BookOpen, UsersRound, GraduationCap, Settings, Gauge } from 'lucide-react';
 import EmployeeDashboard from './components/pages/EmployeeDashboard';
 import TrainingDocumentsList from './components/pages/TrainingDocumentsList';
 import TeamLeaderView from './components/pages/TeamLeaderView';
 import TrainingSignOffModal from './components/pages/TrainingSignOffModal';
 import AdminView from './components/pages/AdminView';
+import GroupTrainingSession from './components/pages/GroupTrainingSession';
 
 const TrainingModuleUI = () => {
   const [currentPage, setCurrentPage] = useState('employee-dashboard');
@@ -25,30 +26,35 @@ const TrainingModuleUI = () => {
 
   // Navigation
   const pages = {
-    'employee-dashboard': { 
-      title: 'Employee Dashboard', 
-      component: <EmployeeDashboard onNavigateToSignOff={navigateToSignOff} />, 
-      icon: <Users size={20} /> 
+    'employee-dashboard': {
+      title: 'Employee Dashboard',
+      component: <EmployeeDashboard onNavigateToSignOff={navigateToSignOff} />,
+      icon: <Gauge size={20} />
     },
-    'documents': { 
-      title: 'Training Documents', 
-      component: <TrainingDocumentsList />, 
-      icon: <FileText size={20} /> 
+    'documents': {
+      title: 'Training Documents',
+      component: <TrainingDocumentsList />,
+      icon: <FileText size={20} />
     },
-    'team-leader': { 
-      title: 'Team Management', 
-      component: <TeamLeaderView />, 
-      icon: <Users size={20} /> 
+    'team-leader': {
+      title: 'Team Management',
+      component: <TeamLeaderView />,
+      icon: <UsersRound size={20} />
     },
-    'sign-off': { 
-      title: 'Sign-off', 
-      component: <TrainingSignOffModal trainingData={selectedTraining} onClose={() => navigateToPage('employee-dashboard')} />, 
-      icon: <BookOpen size={20} /> 
+    'group-training': {
+      title: 'Group Training Session',
+      component: <GroupTrainingSession />,
+      icon: <GraduationCap size={20} />
     },
-    'admin': { 
-      title: 'Administration', 
-      component: <AdminView />, 
-      icon: <FileText size={20} /> 
+    'sign-off': {
+      title: 'Sign-off',
+      component: <TrainingSignOffModal trainingData={selectedTraining} onClose={() => navigateToPage('employee-dashboard')} />,
+      icon: <BookOpen size={20} />
+    },
+    'admin': {
+      title: 'Administration',
+      component: <AdminView />,
+      icon: <Settings size={20} />
     },
   };
 
@@ -70,7 +76,7 @@ const TrainingModuleUI = () => {
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Users size={20} />
+              <Gauge size={20} />
               <span>My Dashboard</span>
             </button>
             <div className="pt-4 pb-2">
@@ -96,8 +102,19 @@ const TrainingModuleUI = () => {
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Users size={20} />
+              <UsersRound size={20} />
               <span>Team Management</span>
+            </button>
+            <button
+              onClick={() => navigateToPage('group-training')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                currentPage === 'group-training'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <GraduationCap size={20} />
+              <span>Group Training</span>
             </button>
             <button
               onClick={() => navigateToPage('admin')}
@@ -107,7 +124,7 @@ const TrainingModuleUI = () => {
                   : 'text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <FileText size={20} />
+              <Settings size={20} />
               <span>Administration</span>
             </button>
           </div>
