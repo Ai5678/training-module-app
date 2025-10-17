@@ -11,13 +11,13 @@ const GroupTrainingSession = () => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templateSearchTerm, setTemplateSearchTerm] = useState('');
 
-  // Step 2: Employee Addition (with gap analysis)
-  const [employees, setEmployees] = useState([]); // Array of {employee, missingTrainings}
+  // Step 2: Employee Sign-off (immediate after entering ID)
+  const [employees, setEmployees] = useState([]); // Array of {employee, missingTrainings} - completed employees
   const [employeeIdInput, setEmployeeIdInput] = useState('');
   const [employeeIdError, setEmployeeIdError] = useState('');
 
-  // Step 3: Employee Sign-offs (one document at a time)
-  const [currentEmployeeIndex, setCurrentEmployeeIndex] = useState(0);
+  // Current employee signing flow
+  const [currentEmployee, setCurrentEmployee] = useState(null); // Current employee being processed
   const [currentTrainingIndex, setCurrentTrainingIndex] = useState(0);
   const [employeeSignatures, setEmployeeSignatures] = useState({}); // {empId: {trainingId: {signature}}}
   const [currentChecklist, setCurrentChecklist] = useState({
@@ -32,7 +32,7 @@ const GroupTrainingSession = () => {
   const [showSignatureModal, setShowSignatureModal] = useState(false);
   const [modalPassword, setModalPassword] = useState('');
 
-  // Step 4: Supervisor Verification
+  // Step 3: Supervisor Verification
   const [supervisorChecklist, setSupervisorChecklist] = useState({
     allEmployeesPresent: false,
     documentsReviewed: false,
@@ -66,8 +66,7 @@ const GroupTrainingSession = () => {
     }).filter(Boolean);
   }, [selectedTemplate]);
 
-  // Current employee and training for Step 3
-  const currentEmployee = employees[currentEmployeeIndex];
+  // Current training for signing
   const currentTraining = currentEmployee?.missingTrainings[currentTrainingIndex];
 
   // Calculate total assignments and progress
@@ -78,7 +77,7 @@ const GroupTrainingSession = () => {
 
   // Navigation validation
   const canProceedStep1 = selectedTemplate !== null;
-  const canProceedStep2 = employees.length > 0;
+  const canProceedStep2 = employees.length > 0; // At least one employee completed
   const allChecklistChecked = Object.values(currentChecklist).every(v => v);
   const canOpenSignatureModal = allChecklistChecked;
   const canConfirmSignature = modalPassword.trim().length > 0;
@@ -112,9 +111,15 @@ const GroupTrainingSession = () => {
       return;
     }
 
-    // Check if already added
+    // Check if already completed
     if (employees.some(e => e.employee.id === employee.id)) {
-      setEmployeeIdError(`${employee.name} has already been added to this session`);
+      setEmployeeIdError(`${employee.name} has already completed training in this session`);
+      return;
+    }
+
+    // Check if currently signing
+    if (currentEmployee && currentEmployee.employee.id === employee.id) {
+      setEmployeeIdError(`${employee.name} is currently signing trainings`);
       return;
     }
 
@@ -138,9 +143,17 @@ const GroupTrainingSession = () => {
         return training && !completedTrainings.includes(training.id);
       });
 
-    // Add employee with their missing trainings
-    setEmployees(prev => [...prev, { employee, missingTrainings }]);
+    if (missingTrainings.length === 0) {
+      setEmployeeIdError(`${employee.name} has no training gaps for this template`);
+      return;
+    }
+
+    // Start signing flow for this employee
+    setCurrentEmployee({ employee, missingTrainings });
+    setCurrentTrainingIndex(0);
     setEmployeeIdInput('');
+    setCurrentChecklist({ read: false, understood: false, follow: false, questions: false });
+    setCurrentComments('');
   };
 
   const handleRemoveEmployee = (employeeId) => {
@@ -199,17 +212,13 @@ const GroupTrainingSession = () => {
     setModalPassword('');
     setShowSignatureModal(false);
 
-    // Move to next training or next employee
+    // Move to next training or complete employee
     if (currentTrainingIndex < currentEmployee.missingTrainings.length - 1) {
       // More trainings for this employee
       setCurrentTrainingIndex(prev => prev + 1);
-    } else if (currentEmployeeIndex < employees.length - 1) {
-      // Move to next employee
-      setCurrentEmployeeIndex(prev => prev + 1);
-      setCurrentTrainingIndex(0);
     } else {
-      // All done, go to supervisor verification
-      goToStep(4);
+      // This employee completed all trainings
+      handleEmployeeComplete();
     }
   };
 
@@ -223,25 +232,38 @@ const GroupTrainingSession = () => {
     });
     setCurrentComments('');
 
-    // Move to next training or next employee
+    // Move to next training or complete employee
     if (currentTrainingIndex < currentEmployee.missingTrainings.length - 1) {
       setCurrentTrainingIndex(prev => prev + 1);
-    } else if (currentEmployeeIndex < employees.length - 1) {
-      setCurrentEmployeeIndex(prev => prev + 1);
-      setCurrentTrainingIndex(0);
     } else {
-      goToStep(4);
+      handleEmployeeComplete();
     }
+  };
+
+  const handleEmployeeComplete = () => {
+    // Add completed employee to list
+    setEmployees(prev => [...prev, currentEmployee]);
+    // Clear current employee
+    setCurrentEmployee(null);
+    setCurrentTrainingIndex(0);
+  };
+
+  const handleAddAnotherEmployee = () => {
+    // Stay on step 2, allow adding another employee
+    setEmployeeIdInput('');
+    setEmployeeIdError('');
+  };
+
+  const handleProceedToVerification = () => {
+    // Go to supervisor verification
+    setCurrentStep(3);
   };
 
   const handlePreviousTraining = () => {
     if (currentTrainingIndex > 0) {
       setCurrentTrainingIndex(prev => prev - 1);
-    } else if (currentEmployeeIndex > 0) {
-      setCurrentEmployeeIndex(prev => prev - 1);
-      const prevEmployee = employees[currentEmployeeIndex - 1];
-      setCurrentTrainingIndex(prevEmployee.missingTrainings.length - 1);
     }
+    // Can't go back to previous employee in the new flow
   };
 
   // Supervisor handlers
@@ -299,7 +321,7 @@ const GroupTrainingSession = () => {
     setSelectedTemplate(null);
     setEmployees([]);
     setEmployeeSignatures({});
-    setCurrentEmployeeIndex(0);
+    setCurrentEmployee(null);
     setCurrentTrainingIndex(0);
     setSupervisorChecklist({
       allEmployeesPresent: false,
@@ -340,9 +362,8 @@ const GroupTrainingSession = () => {
         <div className="flex items-center justify-between">
           {[
             { num: 1, label: 'Select Template' },
-            { num: 2, label: 'Add Employees' },
-            { num: 3, label: 'Employee Sign-Off' },
-            { num: 4, label: 'Supervisor Verification' }
+            { num: 2, label: 'Employee Sign-off' },
+            { num: 3, label: 'Supervisor Verification' }
           ].map((step, idx) => (
             <React.Fragment key={step.num}>
               <div className="flex items-center gap-3">
@@ -361,7 +382,7 @@ const GroupTrainingSession = () => {
                   {step.label}
                 </span>
               </div>
-              {idx < 3 && (
+              {idx < 2 && (
                 <div className={`flex-1 h-1 mx-4 ${
                   currentStep > step.num ? 'bg-green-500' : 'bg-gray-200'
                 }`} />
@@ -460,21 +481,21 @@ const GroupTrainingSession = () => {
         </div>
       )}
 
-      {/* Step 2: Add Employees */}
-      {currentStep === 2 && (
+      {/* Step 2: Employee Sign-off */}
+      {currentStep === 2 && !currentEmployee && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <Users size={20} className="text-blue-600" />
-              Step 2: Add Employees
+              Step 2: Employee Sign-off
               {employees.length > 0 && (
-                <span className="text-sm font-normal text-blue-600">
-                  ({employees.length} added)
+                <span className="text-sm font-normal text-green-600">
+                  ({employees.length} completed)
                 </span>
               )}
             </h2>
             <p className="text-sm text-gray-600 mt-1">
-              Enter employee IDs to add them to the training session
+              Enter employee ID - they will immediately review and sign their training documents
             </p>
           </div>
 
@@ -511,6 +532,7 @@ const GroupTrainingSession = () => {
                   className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     employeeIdError ? 'border-red-300' : 'border-gray-300'
                   }`}
+                  autoFocus
                 />
                 {employeeIdError && (
                   <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
@@ -524,42 +546,26 @@ const GroupTrainingSession = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
               >
                 <Plus size={18} />
-                Add
+                Start
               </button>
             </div>
           </div>
 
-          {/* Added Employees List */}
+          {/* Completed Employees List */}
           {employees.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-gray-700 mb-2">Added Employees & Training Gaps:</p>
-              <div className="border border-gray-200 rounded-lg divide-y max-h-96 overflow-y-auto">
+              <p className="text-sm font-medium text-gray-700 mb-2">Completed Employees:</p>
+              <div className="border border-gray-200 rounded-lg divide-y max-h-64 overflow-y-auto">
                 {employees.map((emp) => (
-                  <div key={emp.employee.id} className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <p className="font-medium text-gray-900">{emp.employee.name}</p>
-                        <p className="text-sm text-gray-600">{emp.employee.employeeId} • {emp.employee.role}</p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveEmployee(emp.employee.id)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Remove
-                      </button>
+                  <div key={emp.employee.id} className="p-3 flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-gray-900">{emp.employee.name}</p>
+                      <p className="text-xs text-gray-600">{emp.employee.employeeId} • Signed {emp.missingTrainings.length} training{emp.missingTrainings.length !== 1 ? 's' : ''}</p>
                     </div>
-                    <div className="mt-2">
-                      <p className="text-xs font-medium text-gray-700 mb-1">
-                        Needs to sign {emp.missingTrainings.length} training{emp.missingTrainings.length !== 1 ? 's' : ''}:
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {emp.missingTrainings.map((training) => (
-                          <span key={training.id} className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
-                            {training.name} ({training.currentRev})
-                          </span>
-                        ))}
-                      </div>
-                    </div>
+                    <span className="text-green-600 flex items-center gap-1">
+                      <CheckCircle2 size={16} />
+                      <span className="text-sm">Complete</span>
+                    </span>
                   </div>
                 ))}
               </div>
@@ -575,24 +581,21 @@ const GroupTrainingSession = () => {
               <ChevronLeft size={18} />
               Back
             </button>
-            <button
-              onClick={() => goToStep(3)}
-              disabled={!canProceedStep2}
-              className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${
-                canProceedStep2
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Start Sign-Off Process
-              <ChevronRight size={18} />
-            </button>
+            {employees.length > 0 && (
+              <button
+                onClick={handleProceedToVerification}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+              >
+                Proceed to Supervisor Verification
+                <ChevronRight size={18} />
+              </button>
+            )}
           </div>
         </div>
       )}
 
-      {/* Step 3: Employee Sign-Off (One Document at a Time) */}
-      {currentStep === 3 && currentEmployee && currentTraining && (
+      {/* Employee Signing Interface (shows during Step 2 when currentEmployee exists) */}
+      {currentStep === 2 && currentEmployee && currentTraining && (
         <div className="bg-white rounded-lg shadow">
           {/* Progress Bar */}
           <div className="p-4 bg-gray-50 border-b">
@@ -622,9 +625,9 @@ const GroupTrainingSession = () => {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Employee</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {currentEmployeeIndex + 1} / {employees.length}
+                <p className="text-sm text-gray-600">Completed Employees</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {employees.length}
                 </p>
               </div>
             </div>
@@ -719,7 +722,7 @@ const GroupTrainingSession = () => {
           {/* Navigation */}
           <div className="p-6 bg-gray-50 flex justify-between items-center border-t">
             <div className="flex gap-2">
-              {(currentTrainingIndex > 0 || currentEmployeeIndex > 0) && (
+              {currentTrainingIndex > 0 && (
                 <button
                   onClick={handlePreviousTraining}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 flex items-center gap-2"
@@ -845,10 +848,10 @@ const GroupTrainingSession = () => {
         </div>
       )}
 
-      {/* Step 4: Supervisor Verification */}
-      {currentStep === 4 && (
+      {/* Step 3: Supervisor Verification */}
+      {currentStep === 3 && (
         <div className="bg-white rounded-lg shadow p-6 space-y-6">
-          <h2 className="text-lg font-semibold text-gray-800">Step 4: Supervisor Verification</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Step 3: Supervisor Verification</h2>
 
           {/* Session Summary */}
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -970,18 +973,11 @@ const GroupTrainingSession = () => {
           {/* Navigation */}
           <div className="flex justify-between items-center pt-4 border-t">
             <button
-              onClick={() => {
-                setCurrentStep(3);
-                // Go back to last employee/training
-                if (employees.length > 0) {
-                  setCurrentEmployeeIndex(employees.length - 1);
-                  setCurrentTrainingIndex(employees[employees.length - 1].missingTrainings.length - 1);
-                }
-              }}
+              onClick={() => setCurrentStep(2)}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
               <ChevronLeft size={18} />
-              Back to Sign-Off
+              Back to Employee Sign-Off
             </button>
             <div className="flex items-center gap-4">
               {!canOpenSupervisorModal && (
