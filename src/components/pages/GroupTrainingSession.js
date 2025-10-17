@@ -1,24 +1,25 @@
 import React, { useState, useMemo } from 'react';
-import { FileText, Users, CheckCircle2, AlertCircle, Search, ChevronRight, ChevronLeft, Printer, X, Eye } from 'lucide-react';
-import { trainingDocs, teamMembers } from '../../data/sampleData';
+import { FileText, Users, CheckCircle2, AlertCircle, Search, ChevronRight, ChevronLeft, Printer, X, Eye, Plus } from 'lucide-react';
+import { trainingDocs, teamMembers, templateTrainingMappings, employeeSignatures as historicalSignatures } from '../../data/sampleData';
 
 const GroupTrainingSession = () => {
   // Main wizard state
   const [currentStep, setCurrentStep] = useState(1);
   const [sessionStartTime] = useState(new Date().toISOString());
 
-  // Step 1: Training Document Selection
-  const [selectedTrainingIds, setSelectedTrainingIds] = useState([]);
-  const [trainingSearchTerm, setTrainingSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  // Step 1: Template Selection
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templateSearchTerm, setTemplateSearchTerm] = useState('');
 
-  // Step 2: Employee Selection
-  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState([]);
-  const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
+  // Step 2: Employee Addition (with gap analysis)
+  const [employees, setEmployees] = useState([]); // Array of {employee, missingTrainings}
+  const [employeeIdInput, setEmployeeIdInput] = useState('');
+  const [employeeIdError, setEmployeeIdError] = useState('');
 
-  // Step 3: Employee Sign-offs
+  // Step 3: Employee Sign-offs (one document at a time)
   const [currentEmployeeIndex, setCurrentEmployeeIndex] = useState(0);
-  const [employeeSignatures, setEmployeeSignatures] = useState({});
+  const [currentTrainingIndex, setCurrentTrainingIndex] = useState(0);
+  const [employeeSignatures, setEmployeeSignatures] = useState({}); // {empId: {trainingId: {signature}}}
   const [currentChecklist, setCurrentChecklist] = useState({
     read: false,
     understood: false,
@@ -45,78 +46,39 @@ const GroupTrainingSession = () => {
   const [showSupervisorModal, setShowSupervisorModal] = useState(false);
   const [supervisorModalPassword, setSupervisorModalPassword] = useState('');
 
-  // Filtered training documents
-  const filteredTrainings = useMemo(() => {
-    return trainingDocs
-      .filter(doc => doc.status === 'Active')
-      .filter(doc => {
-        const matchesSearch = doc.name.toLowerCase().includes(trainingSearchTerm.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || doc.category === categoryFilter;
-        return matchesSearch && matchesCategory;
-      });
-  }, [trainingSearchTerm, categoryFilter]);
-
-  // Get unique categories
-  const categories = useMemo(() => {
-    return ['all', ...new Set(trainingDocs.filter(doc => doc.status === 'Active').map(doc => doc.category))];
-  }, []);
-
-  // Filtered employees
-  const filteredEmployees = useMemo(() => {
-    return teamMembers.filter(emp =>
-      emp.name.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
-      emp.employeeId.toLowerCase().includes(employeeSearchTerm.toLowerCase()) ||
-      emp.role.toLowerCase().includes(employeeSearchTerm.toLowerCase())
+  // Filtered templates
+  const filteredTemplates = useMemo(() => {
+    return templateTrainingMappings.filter(template =>
+      template.templateName.toLowerCase().includes(templateSearchTerm.toLowerCase()) ||
+      template.templateId.toLowerCase().includes(templateSearchTerm.toLowerCase())
     );
-  }, [employeeSearchTerm]);
+  }, [templateSearchTerm]);
 
-  // Selected data
-  const selectedTrainings = trainingDocs.filter(t => selectedTrainingIds.includes(t.id));
-  const selectedEmployees = teamMembers.filter(e => selectedEmployeeIds.includes(e.id));
-  const currentEmployee = selectedEmployees[currentEmployeeIndex];
+  // Get required trainings for selected template
+  const requiredTrainings = useMemo(() => {
+    if (!selectedTemplate) return [];
+    return selectedTemplate.requiredTrainings.map(reqTraining => {
+      const doc = trainingDocs.find(d =>
+        d.name === reqTraining.name &&
+        d.currentRev === reqTraining.revision
+      );
+      return doc;
+    }).filter(Boolean);
+  }, [selectedTemplate]);
 
-  // Total assignments
-  const totalAssignments = selectedEmployeeIds.length * selectedTrainingIds.length;
+  // Current employee and training for Step 3
+  const currentEmployee = employees[currentEmployeeIndex];
+  const currentTraining = currentEmployee?.missingTrainings[currentTrainingIndex];
 
-  // Toggle training selection
-  const toggleTraining = (trainingId) => {
-    setSelectedTrainingIds(prev =>
-      prev.includes(trainingId)
-        ? prev.filter(id => id !== trainingId)
-        : [...prev, trainingId]
-    );
-  };
+  // Calculate total assignments and progress
+  const totalAssignments = employees.reduce((sum, emp) => sum + emp.missingTrainings.length, 0);
+  const completedAssignments = Object.values(employeeSignatures).reduce((sum, empSigs) => {
+    return sum + Object.keys(empSigs).length;
+  }, 0);
 
-  // Toggle employee selection
-  const toggleEmployee = (employeeId) => {
-    setSelectedEmployeeIds(prev =>
-      prev.includes(employeeId)
-        ? prev.filter(id => id !== employeeId)
-        : [...prev, employeeId]
-    );
-  };
-
-  // Select/Clear all employees
-  const selectAllEmployees = () => {
-    setSelectedEmployeeIds(filteredEmployees.map(e => e.id));
-  };
-
-  const clearAllEmployees = () => {
-    setSelectedEmployeeIds([]);
-  };
-
-  // Checklist handlers
-  const handleChecklistChange = (field) => {
-    setCurrentChecklist(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  const handleSupervisorChecklistChange = (field) => {
-    setSupervisorChecklist(prev => ({ ...prev, [field]: !prev[field] }));
-  };
-
-  // Navigation
-  const canProceedStep1 = selectedTrainingIds.length > 0;
-  const canProceedStep2 = selectedEmployeeIds.length > 0;
+  // Navigation validation
+  const canProceedStep1 = selectedTemplate !== null;
+  const canProceedStep2 = employees.length > 0;
   const allChecklistChecked = Object.values(currentChecklist).every(v => v);
   const canOpenSignatureModal = allChecklistChecked;
   const canConfirmSignature = modalPassword.trim().length > 0;
@@ -128,6 +90,69 @@ const GroupTrainingSession = () => {
     setCurrentStep(step);
   };
 
+  // Template selection handler
+  const handleTemplateSelect = (template) => {
+    setSelectedTemplate(template);
+  };
+
+  // Employee addition with gap analysis
+  const handleAddEmployee = () => {
+    setEmployeeIdError('');
+    const employeeId = employeeIdInput.trim().toUpperCase();
+
+    if (!employeeId) {
+      setEmployeeIdError('Please enter an employee ID');
+      return;
+    }
+
+    // Check if employee exists
+    const employee = teamMembers.find(e => e.employeeId.toUpperCase() === employeeId);
+    if (!employee) {
+      setEmployeeIdError(`Employee ID "${employeeId}" not found`);
+      return;
+    }
+
+    // Check if already added
+    if (employees.some(e => e.employee.id === employee.id)) {
+      setEmployeeIdError(`${employee.name} has already been added to this session`);
+      return;
+    }
+
+    // Perform gap analysis - find trainings that employee hasn't signed yet
+    const missingTrainings = selectedTemplate.requiredTrainings
+      .map(reqTraining => {
+        return trainingDocs.find(d =>
+          d.name === reqTraining.name &&
+          d.currentRev === reqTraining.revision
+        );
+      })
+      .filter(training => {
+        if (!training) return false;
+
+        // Check if employee has already signed this training in historical data
+        const signatures = historicalSignatures[training.id] || [];
+        const hasSignedTraining = signatures.some(sig => sig.employeeName === employee.name);
+
+        // Include in missing trainings only if NOT signed
+        return !hasSignedTraining;
+      });
+
+    // Add employee with their missing trainings
+    setEmployees(prev => [...prev, { employee, missingTrainings }]);
+    setEmployeeIdInput('');
+  };
+
+  const handleRemoveEmployee = (employeeId) => {
+    setEmployees(prev => prev.filter(e => e.employee.id !== employeeId));
+    // Also remove their signatures
+    setEmployeeSignatures(prev => {
+      const newSigs = { ...prev };
+      delete newSigs[employeeId];
+      return newSigs;
+    });
+  };
+
+  // Signature modal handlers
   const handleOpenSignatureModal = () => {
     if (!canOpenSignatureModal) return;
     setShowSignatureModal(true);
@@ -139,24 +164,30 @@ const GroupTrainingSession = () => {
   };
 
   const handleEmployeeSign = () => {
-    if (!canConfirmSignature) return;
+    if (!canConfirmSignature || !currentEmployee || !currentTraining) return;
 
-    // Store signature
     const signature = {
-      employeeId: currentEmployee.id,
-      employeeName: currentEmployee.name,
+      employeeId: currentEmployee.employee.id,
+      employeeName: currentEmployee.employee.name,
+      trainingId: currentTraining.id,
+      trainingName: currentTraining.name,
+      revision: currentTraining.currentRev,
       checklist: { ...currentChecklist },
       password: modalPassword,
       comments: currentComments,
       timestamp: new Date().toISOString()
     };
 
+    // Store signature
     setEmployeeSignatures(prev => ({
       ...prev,
-      [currentEmployee.id]: signature
+      [currentEmployee.employee.id]: {
+        ...prev[currentEmployee.employee.id],
+        [currentTraining.id]: signature
+      }
     }));
 
-    // Reset current form
+    // Reset form
     setCurrentChecklist({
       read: false,
       understood: false,
@@ -167,22 +198,22 @@ const GroupTrainingSession = () => {
     setModalPassword('');
     setShowSignatureModal(false);
 
-    // Move to next employee or go to supervisor step
-    if (currentEmployeeIndex < selectedEmployees.length - 1) {
+    // Move to next training or next employee
+    if (currentTrainingIndex < currentEmployee.missingTrainings.length - 1) {
+      // More trainings for this employee
+      setCurrentTrainingIndex(prev => prev + 1);
+    } else if (currentEmployeeIndex < employees.length - 1) {
+      // Move to next employee
       setCurrentEmployeeIndex(prev => prev + 1);
+      setCurrentTrainingIndex(0);
     } else {
+      // All done, go to supervisor verification
       goToStep(4);
     }
   };
 
-  const handlePreviousEmployee = () => {
-    if (currentEmployeeIndex > 0) {
-      setCurrentEmployeeIndex(prev => prev - 1);
-    }
-  };
-
-  const handleSkipEmployee = () => {
-    // Reset current form
+  const handleSkipTraining = () => {
+    // Reset form
     setCurrentChecklist({
       read: false,
       understood: false,
@@ -191,12 +222,34 @@ const GroupTrainingSession = () => {
     });
     setCurrentComments('');
 
-    // Move to next employee or go to supervisor step
-    if (currentEmployeeIndex < selectedEmployees.length - 1) {
+    // Move to next training or next employee
+    if (currentTrainingIndex < currentEmployee.missingTrainings.length - 1) {
+      setCurrentTrainingIndex(prev => prev + 1);
+    } else if (currentEmployeeIndex < employees.length - 1) {
       setCurrentEmployeeIndex(prev => prev + 1);
+      setCurrentTrainingIndex(0);
     } else {
       goToStep(4);
     }
+  };
+
+  const handlePreviousTraining = () => {
+    if (currentTrainingIndex > 0) {
+      setCurrentTrainingIndex(prev => prev - 1);
+    } else if (currentEmployeeIndex > 0) {
+      setCurrentEmployeeIndex(prev => prev - 1);
+      const prevEmployee = employees[currentEmployeeIndex - 1];
+      setCurrentTrainingIndex(prevEmployee.missingTrainings.length - 1);
+    }
+  };
+
+  // Supervisor handlers
+  const handleChecklistChange = (field) => {
+    setCurrentChecklist(prev => ({ ...prev, [field]: !prev[field] }));
+  };
+
+  const handleSupervisorChecklistChange = (field) => {
+    setSupervisorChecklist(prev => ({ ...prev, [field]: !prev[field] }));
   };
 
   const handleOpenSupervisorModal = () => {
@@ -216,8 +269,8 @@ const GroupTrainingSession = () => {
       sessionId: `GTS-${Date.now()}`,
       sessionStartTime,
       sessionEndTime: new Date().toISOString(),
-      trainings: selectedTrainings,
-      employees: selectedEmployees,
+      template: selectedTemplate,
+      employees: employees.map(e => e.employee),
       employeeSignatures,
       supervisorSignature: {
         password: supervisorModalPassword,
@@ -227,16 +280,14 @@ const GroupTrainingSession = () => {
         timestamp: new Date().toISOString()
       },
       totalAssignments,
-      signedCount: Object.keys(employeeSignatures).length,
-      skippedCount: selectedEmployees.length - Object.keys(employeeSignatures).length
+      completedAssignments
     };
 
     console.log('Group Training Session Submitted:', sessionData);
-    // TODO: Send to backend/database
 
-    alert(`Group Training Session completed!\n\n${Object.keys(employeeSignatures).length} employees signed\n${selectedEmployees.length - Object.keys(employeeSignatures).length} employees skipped\n\nAll signed employees have been verified.`);
+    alert(`Group Training Session completed!\n\nTemplate: ${selectedTemplate.templateName}\n${completedAssignments} of ${totalAssignments} assignments signed\n\nAll signed employees have been verified.`);
 
-    // Close modal and reset the form
+    // Close modal and reset
     setShowSupervisorModal(false);
     setSupervisorModalPassword('');
     resetSession();
@@ -244,10 +295,11 @@ const GroupTrainingSession = () => {
 
   const resetSession = () => {
     setCurrentStep(1);
-    setSelectedTrainingIds([]);
-    setSelectedEmployeeIds([]);
+    setSelectedTemplate(null);
+    setEmployees([]);
     setEmployeeSignatures({});
     setCurrentEmployeeIndex(0);
+    setCurrentTrainingIndex(0);
     setSupervisorChecklist({
       allEmployeesPresent: false,
       documentsReviewed: false,
@@ -260,15 +312,8 @@ const GroupTrainingSession = () => {
 
   const handlePrintSummary = () => {
     console.log('Printing session summary...');
-    // TODO: Implement print functionality
     alert('Print summary feature coming soon!');
   };
-
-  // Progress indicator
-  const signedEmployees = Object.keys(employeeSignatures);
-  const progressPercentage = selectedEmployees.length > 0
-    ? (signedEmployees.length / selectedEmployees.length) * 100
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -293,8 +338,8 @@ const GroupTrainingSession = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between">
           {[
-            { num: 1, label: 'Select Training' },
-            { num: 2, label: 'Select Employees' },
+            { num: 1, label: 'Select Template' },
+            { num: 2, label: 'Add Employees' },
             { num: 3, label: 'Employee Sign-Off' },
             { num: 4, label: 'Supervisor Verification' }
           ].map((step, idx) => (
@@ -325,79 +370,79 @@ const GroupTrainingSession = () => {
         </div>
       </div>
 
-      {/* Step 1: Select Training Documents */}
+      {/* Step 1: Select Template */}
       {currentStep === 1 && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div className="flex justify-between items-center">
+          <div>
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <FileText size={20} className="text-blue-600" />
-              Step 1: Select Training Documents
-              {selectedTrainingIds.length > 0 && (
+              Step 1: Select Template
+              {selectedTemplate && (
                 <span className="text-sm font-normal text-blue-600">
-                  ({selectedTrainingIds.length} selected)
+                  ({selectedTemplate.templateId} selected)
                 </span>
               )}
             </h2>
+            <p className="text-sm text-gray-600 mt-1">Choose the template that employees will be trained for</p>
           </div>
 
-          {/* Search and Filter */}
-          <div className="flex gap-3">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search training documents..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={trainingSearchTerm}
-                onChange={(e) => setTrainingSearchTerm(e.target.value)}
-              />
-            </div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>
-                  {cat === 'all' ? 'All Categories' : cat}
-                </option>
-              ))}
-            </select>
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type="text"
+              placeholder="Search templates..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              value={templateSearchTerm}
+              onChange={(e) => setTemplateSearchTerm(e.target.value)}
+            />
           </div>
 
-          {/* Training List */}
+          {/* Template List */}
           <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-            {filteredTrainings.map(training => (
+            {filteredTemplates.map(template => (
               <label
-                key={training.id}
-                className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                key={template.id}
+                className="flex items-start gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
               >
                 <input
-                  type="checkbox"
-                  checked={selectedTrainingIds.includes(training.id)}
-                  onChange={() => toggleTraining(training.id)}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  type="radio"
+                  name="template"
+                  checked={selectedTemplate?.id === template.id}
+                  onChange={() => handleTemplateSelect(template)}
+                  className="mt-1 w-5 h-5 text-blue-600"
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{training.name}</p>
-                  <p className="text-xs text-gray-600">
-                    <span className="font-mono">{training.currentRev}</span> • {training.category} • Last updated: {training.lastUpdated}
+                  <p className="text-sm font-medium text-gray-900">
+                    {template.templateId}: {template.templateName}
                   </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Requires {template.requiredTrainings.length} training document{template.requiredTrainings.length !== 1 ? 's' : ''}
+                  </p>
+                  {selectedTemplate?.id === template.id && (
+                    <div className="mt-3 pt-3 border-t space-y-2">
+                      <p className="text-xs font-medium text-gray-700">Required Training Documents:</p>
+                      {template.requiredTrainings.map((training, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-xs bg-blue-50 text-blue-800 px-2 py-1 rounded">
+                          <FileText size={14} />
+                          {training.name} ({training.revision})
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </label>
             ))}
           </div>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="text-sm text-gray-600">
-              {!canProceedStep1 && (
-                <div className="flex items-center gap-2 text-amber-600">
-                  <AlertCircle size={16} />
-                  <span>Please select at least one training document</span>
-                </div>
-              )}
-            </div>
+          <div className="flex justify-end items-center pt-4 border-t">
+            {!canProceedStep1 && (
+              <div className="flex items-center gap-2 text-sm text-amber-600 mr-4">
+                <AlertCircle size={16} />
+                <span>Please select a template</span>
+              </div>
+            )}
             <button
               onClick={() => goToStep(2)}
               disabled={!canProceedStep1}
@@ -407,97 +452,118 @@ const GroupTrainingSession = () => {
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              Next: Select Employees
+              Next: Add Employees
               <ChevronRight size={18} />
             </button>
           </div>
         </div>
       )}
 
-      {/* Step 2: Select Employees */}
+      {/* Step 2: Add Employees */}
       {currentStep === 2 && (
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <div className="flex justify-between items-center">
+          <div>
             <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
               <Users size={20} className="text-blue-600" />
-              Step 2: Select Employees
-              {selectedEmployeeIds.length > 0 && (
+              Step 2: Add Employees
+              {employees.length > 0 && (
                 <span className="text-sm font-normal text-blue-600">
-                  ({selectedEmployeeIds.length} selected)
+                  ({employees.length} added)
                 </span>
               )}
             </h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Enter employee IDs to add them to the training session
+            </p>
+          </div>
+
+          {/* Selected Template Info */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm font-medium text-gray-900">
+              Template: {selectedTemplate.templateId} - {selectedTemplate.templateName}
+            </p>
+            <p className="text-xs text-gray-600 mt-1">
+              {selectedTemplate.requiredTrainings.length} required training{selectedTemplate.requiredTrainings.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          {/* Add Employee Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Enter Employee ID
+            </label>
             <div className="flex gap-2">
-              <button
-                onClick={selectAllEmployees}
-                className="text-sm text-blue-600 hover:text-blue-700"
-              >
-                Select All
-              </button>
-              {selectedEmployeeIds.length > 0 && (
-                <button
-                  onClick={clearAllEmployees}
-                  className="text-sm text-gray-600 hover:text-gray-700"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input
-              type="text"
-              placeholder="Search employees by name, ID, or role..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              value={employeeSearchTerm}
-              onChange={(e) => setEmployeeSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Employee List */}
-          <div className="border border-gray-200 rounded-lg max-h-96 overflow-y-auto">
-            {filteredEmployees.map(employee => (
-              <label
-                key={employee.id}
-                className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-              >
+              <div className="flex-1">
                 <input
-                  type="checkbox"
-                  checked={selectedEmployeeIds.includes(employee.id)}
-                  onChange={() => toggleEmployee(employee.id)}
-                  className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  type="text"
+                  value={employeeIdInput}
+                  onChange={(e) => {
+                    setEmployeeIdInput(e.target.value);
+                    setEmployeeIdError('');
+                  }}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddEmployee();
+                    }
+                  }}
+                  placeholder="e.g., EMP001"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    employeeIdError ? 'border-red-300' : 'border-gray-300'
+                  }`}
                 />
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{employee.name}</p>
-                  <p className="text-xs text-gray-600">
-                    {employee.employeeId} • {employee.role} • {employee.trainings} completed trainings
+                {employeeIdError && (
+                  <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} />
+                    {employeeIdError}
                   </p>
-                </div>
-              </label>
-            ))}
-          </div>
-
-          {/* Summary */}
-          <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
-            <h4 className="text-sm font-semibold text-gray-800 mb-2">Session Summary</h4>
-            <div className="space-y-1 text-sm text-gray-700">
-              <div className="flex items-center gap-2">
-                <FileText size={16} className="text-blue-600" />
-                <span>{selectedTrainingIds.length} training document{selectedTrainingIds.length !== 1 ? 's' : ''}</span>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Users size={16} className="text-blue-600" />
-                <span>{selectedEmployeeIds.length} employee{selectedEmployeeIds.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-blue-600" />
-                <span className="font-semibold">{totalAssignments} total assignment{totalAssignments !== 1 ? 's' : ''}</span>
-              </div>
+              <button
+                onClick={handleAddEmployee}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus size={18} />
+                Add
+              </button>
             </div>
           </div>
+
+          {/* Added Employees List */}
+          {employees.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Added Employees & Training Gaps:</p>
+              <div className="border border-gray-200 rounded-lg divide-y max-h-96 overflow-y-auto">
+                {employees.map((emp) => (
+                  <div key={emp.employee.id} className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-medium text-gray-900">{emp.employee.name}</p>
+                        <p className="text-sm text-gray-600">{emp.employee.employeeId} • {emp.employee.role}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveEmployee(emp.employee.id)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="mt-2">
+                      <p className="text-xs font-medium text-gray-700 mb-1">
+                        Needs to sign {emp.missingTrainings.length} training{emp.missingTrainings.length !== 1 ? 's' : ''}:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {emp.missingTrainings.map((training) => (
+                          <span key={training.id} className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">
+                            {training.name} ({training.currentRev})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Navigation */}
           <div className="flex justify-between items-center pt-4 border-t">
@@ -508,86 +574,80 @@ const GroupTrainingSession = () => {
               <ChevronLeft size={18} />
               Back
             </button>
-            <div className="flex items-center gap-4">
-              {!canProceedStep2 && (
-                <div className="flex items-center gap-2 text-sm text-amber-600">
-                  <AlertCircle size={16} />
-                  <span>Please select at least one employee</span>
-                </div>
-              )}
-              <button
-                onClick={() => goToStep(3)}
-                disabled={!canProceedStep2}
-                className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${
-                  canProceedStep2
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Start Sign-Off Process
-                <ChevronRight size={18} />
-              </button>
-            </div>
+            <button
+              onClick={() => goToStep(3)}
+              disabled={!canProceedStep2}
+              className={`px-6 py-2 rounded-lg font-medium flex items-center gap-2 ${
+                canProceedStep2
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              Start Sign-Off Process
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
       )}
 
-      {/* Step 3: Employee Sign-Off (Kiosk Mode) */}
-      {currentStep === 3 && currentEmployee && (
+      {/* Step 3: Employee Sign-Off (One Document at a Time) */}
+      {currentStep === 3 && currentEmployee && currentTraining && (
         <div className="bg-white rounded-lg shadow">
           {/* Progress Bar */}
           <div className="p-4 bg-gray-50 border-b">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-gray-700">
-                Progress: {signedEmployees.length} of {selectedEmployees.length} employees signed
+                Progress: {completedAssignments} of {totalAssignments} assignments signed
               </span>
               <span className="text-sm text-gray-600">
-                {Math.round(progressPercentage)}% complete
+                {Math.round((completedAssignments / totalAssignments) * 100)}% complete
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progressPercentage}%` }}
+                style={{ width: `${(completedAssignments / totalAssignments) * 100}%` }}
               />
             </div>
           </div>
 
-          {/* Current Employee Info */}
+          {/* Current Employee & Training Info */}
           <div className="p-6 bg-blue-50 border-b">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-3">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">{currentEmployee.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{currentEmployee.employee.name}</h2>
                 <p className="text-sm text-gray-600 mt-1">
-                  {currentEmployee.employeeId} • {currentEmployee.role}
+                  {currentEmployee.employee.employeeId} • {currentEmployee.employee.role}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-sm text-gray-600">Employee</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {currentEmployeeIndex + 1} / {selectedEmployees.length}
+                  {currentEmployeeIndex + 1} / {employees.length}
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-2 text-sm">
+              <FileText className="text-blue-600" size={16} />
+              <span className="text-gray-700">
+                Training {currentTrainingIndex + 1} of {currentEmployee.missingTrainings.length}
+              </span>
+            </div>
           </div>
 
-          {/* Training Documents to Review */}
+          {/* Current Training Document */}
           <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Training Documents to Review:</h3>
-            <div className="space-y-2">
-              {selectedTrainings.map((training, idx) => (
-                <div key={training.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <FileText className="text-blue-600" size={20} />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">{training.name}</p>
-                    <p className="text-xs text-gray-600">Revision: {training.currentRev}</p>
-                  </div>
-                  <button className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 flex items-center gap-1">
-                    <Eye size={14} />
-                    Open
-                  </button>
-                </div>
-              ))}
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">Training Document:</h3>
+            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <FileText className="text-blue-600" size={24} />
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">{currentTraining.name}</p>
+                <p className="text-sm text-gray-600">Revision: {currentTraining.currentRev} • {currentTraining.category}</p>
+              </div>
+              <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center gap-1">
+                <Eye size={14} />
+                Open
+              </button>
             </div>
           </div>
 
@@ -602,7 +662,7 @@ const GroupTrainingSession = () => {
                   onChange={() => handleChecklistChange('read')}
                   className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">I have read and understood all sections of these training documents</span>
+                <span className="text-sm text-gray-700">I have read and understood all sections of this training document</span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -611,7 +671,7 @@ const GroupTrainingSession = () => {
                   onChange={() => handleChecklistChange('understood')}
                   className="mt-1 w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-sm text-gray-700">I understand the procedures and requirements outlined in these documents</span>
+                <span className="text-sm text-gray-700">I understand the procedures and requirements outlined in this document</span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
@@ -658,20 +718,26 @@ const GroupTrainingSession = () => {
           {/* Navigation */}
           <div className="p-6 bg-gray-50 flex justify-between items-center border-t">
             <div className="flex gap-2">
-              {currentEmployeeIndex > 0 && (
+              {(currentTrainingIndex > 0 || currentEmployeeIndex > 0) && (
                 <button
-                  onClick={handlePreviousEmployee}
+                  onClick={handlePreviousTraining}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 flex items-center gap-2"
                 >
                   <ChevronLeft size={18} />
-                  Previous Employee
+                  Previous
                 </button>
               )}
               <button
-                onClick={handleSkipEmployee}
+                onClick={handleSkipTraining}
                 className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100"
               >
-                Skip (Employee Absent)
+                Skip This Training
+              </button>
+              <button
+                onClick={() => goToStep(4)}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Complete & Verify Training
               </button>
             </div>
             <button
@@ -684,14 +750,14 @@ const GroupTrainingSession = () => {
               }`}
             >
               <CheckCircle2 size={18} />
-              {currentEmployeeIndex < selectedEmployees.length - 1 ? 'Sign & Next Employee' : 'Sign & Continue to Verification'}
+              Sign This Training
             </button>
           </div>
         </div>
       )}
 
-      {/* Signature Confirmation Modal */}
-      {showSignatureModal && currentEmployee && (
+      {/* Employee Signature Modal */}
+      {showSignatureModal && currentEmployee && currentTraining && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
             {/* Modal Header */}
@@ -712,23 +778,19 @@ const GroupTrainingSession = () => {
               {/* Employee Info */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-gray-600 mb-1">Employee</p>
-                <p className="font-semibold text-gray-900">{currentEmployee.name}</p>
-                <p className="text-sm text-gray-600">{currentEmployee.employeeId}</p>
+                <p className="font-semibold text-gray-900">{currentEmployee.employee.name}</p>
+                <p className="text-sm text-gray-600">{currentEmployee.employee.employeeId}</p>
               </div>
 
-              {/* Training Documents Summary */}
+              {/* Training Document */}
               <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Training Documents ({selectedTrainings.length}):</p>
-                <div className="space-y-1">
-                  {selectedTrainings.map((training) => (
-                    <div key={training.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
-                      <FileText size={16} className="text-blue-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{training.name}</p>
-                        <p className="text-xs text-gray-600">{training.currentRev}</p>
-                      </div>
-                    </div>
-                  ))}
+                <p className="text-sm font-medium text-gray-700 mb-2">Training Document:</p>
+                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
+                  <FileText size={16} className="text-blue-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{currentTraining.name}</p>
+                    <p className="text-xs text-gray-600">{currentTraining.currentRev}</p>
+                  </div>
                 </div>
               </div>
 
@@ -753,7 +815,7 @@ const GroupTrainingSession = () => {
               </div>
 
               <p className="text-xs text-gray-600">
-                By submitting, you confirm that you have read and understood all selected training documents.
+                By submitting, you confirm that you have read and understood this training document.
               </p>
             </div>
 
@@ -792,71 +854,50 @@ const GroupTrainingSession = () => {
             <h3 className="font-semibold text-gray-900 mb-3">Session Summary</h3>
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-gray-600">Training Documents:</p>
-                <p className="font-medium text-gray-900">{selectedTrainings.length}</p>
+                <p className="text-gray-600">Template:</p>
+                <p className="font-medium text-gray-900">{selectedTemplate.templateId}</p>
               </div>
               <div>
                 <p className="text-gray-600">Total Employees:</p>
-                <p className="font-medium text-gray-900">{selectedEmployees.length}</p>
+                <p className="font-medium text-gray-900">{employees.length}</p>
               </div>
               <div>
-                <p className="text-gray-600">Employees Signed:</p>
-                <p className="font-medium text-green-700">{signedEmployees.length}</p>
+                <p className="text-gray-600">Completed Assignments:</p>
+                <p className="font-medium text-green-700">{completedAssignments}</p>
               </div>
               <div>
-                <p className="text-gray-600">Employees Skipped:</p>
-                <p className="font-medium text-amber-700">{selectedEmployees.length - signedEmployees.length}</p>
+                <p className="text-gray-600">Total Assignments:</p>
+                <p className="font-medium text-gray-900">{totalAssignments}</p>
               </div>
             </div>
           </div>
 
-          {/* Signed Employees List */}
+          {/* Employee Signatures */}
           <div>
-            <h3 className="font-semibold text-gray-800 mb-3">Employees Who Signed:</h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Employee Signatures:</h3>
             <div className="border border-gray-200 rounded-lg divide-y max-h-64 overflow-y-auto">
-              {signedEmployees.length > 0 ? (
-                signedEmployees.map(empId => {
-                  const emp = selectedEmployees.find(e => e.id === parseInt(empId));
-                  const sig = employeeSignatures[empId];
-                  return (
-                    <div key={empId} className="p-3 flex items-center justify-between">
+              {employees.map(emp => {
+                const empSigs = employeeSignatures[emp.employee.id] || {};
+                const signedCount = Object.keys(empSigs).length;
+                return (
+                  <div key={emp.employee.id} className="p-3">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{emp.name}</p>
-                        <p className="text-xs text-gray-600">{emp.employeeId}</p>
+                        <p className="text-sm font-medium text-gray-900">{emp.employee.name}</p>
+                        <p className="text-xs text-gray-600">{emp.employee.employeeId}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-gray-600">Signed at</p>
-                        <p className="text-xs font-medium text-gray-900">
-                          {new Date(sig.timestamp).toLocaleTimeString()}
+                        <p className="text-xs text-gray-600">Signed</p>
+                        <p className={`text-sm font-medium ${signedCount === emp.missingTrainings.length ? 'text-green-700' : 'text-amber-700'}`}>
+                          {signedCount} / {emp.missingTrainings.length}
                         </p>
                       </div>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="p-6 text-center text-gray-500">
-                  <p className="text-sm">No employees have signed yet</p>
-                </div>
-              )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          {/* Skipped Employees List */}
-          {selectedEmployees.length - signedEmployees.length > 0 && (
-            <div>
-              <h3 className="font-semibold text-gray-800 mb-3">Employees Who Did Not Sign:</h3>
-              <div className="border border-amber-200 bg-amber-50 rounded-lg divide-y max-h-48 overflow-y-auto">
-                {selectedEmployees
-                  .filter(emp => !signedEmployees.includes(emp.id.toString()))
-                  .map(emp => (
-                    <div key={emp.id} className="p-3">
-                      <p className="text-sm font-medium text-gray-900">{emp.name}</p>
-                      <p className="text-xs text-gray-600">{emp.employeeId}</p>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
 
           {/* Supervisor Checklist */}
           <div>
@@ -930,7 +971,11 @@ const GroupTrainingSession = () => {
             <button
               onClick={() => {
                 setCurrentStep(3);
-                setCurrentEmployeeIndex(selectedEmployees.length - 1);
+                // Go back to last employee/training
+                if (employees.length > 0) {
+                  setCurrentEmployeeIndex(employees.length - 1);
+                  setCurrentTrainingIndex(employees[employees.length - 1].missingTrainings.length - 1);
+                }
               }}
               className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 flex items-center gap-2"
             >
@@ -985,56 +1030,17 @@ const GroupTrainingSession = () => {
                 <h4 className="font-semibold text-gray-900 mb-2">Session Summary</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Training Documents:</span>
-                    <span className="font-medium text-gray-900">{selectedTrainings.length}</span>
+                    <span className="text-gray-600">Template:</span>
+                    <span className="font-medium text-gray-900">{selectedTemplate.templateId}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Employees Signed:</span>
-                    <span className="font-medium text-green-700">{signedEmployees.length}</span>
+                    <span className="text-gray-600">Employees:</span>
+                    <span className="font-medium text-gray-900">{employees.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Employees Skipped:</span>
-                    <span className="font-medium text-amber-700">{selectedEmployees.length - signedEmployees.length}</span>
+                    <span className="text-gray-600">Completed Assignments:</span>
+                    <span className="font-medium text-green-700">{completedAssignments} / {totalAssignments}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Total Assignments:</span>
-                    <span className="font-medium text-gray-900">{totalAssignments}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Training Documents List */}
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Training Documents:</p>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {selectedTrainings.map((training) => (
-                    <div key={training.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-sm">
-                      <FileText size={16} className="text-blue-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">{training.name}</p>
-                        <p className="text-xs text-gray-600">{training.currentRev}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Signed Employees */}
-              <div>
-                <p className="text-sm font-medium text-gray-700 mb-2">Signed Employees ({signedEmployees.length}):</p>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {signedEmployees.map(empId => {
-                    const emp = selectedEmployees.find(e => e.id === parseInt(empId));
-                    return (
-                      <div key={empId} className="flex items-center gap-2 p-2 bg-green-50 rounded text-sm">
-                        <CheckCircle2 size={16} className="text-green-600 flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-gray-900">{emp.name}</p>
-                          <p className="text-xs text-gray-600">{emp.employeeId}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
 
@@ -1057,7 +1063,7 @@ const GroupTrainingSession = () => {
                   }}
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  Your signature will be applied as verification to all {signedEmployees.length} signed employee{signedEmployees.length !== 1 ? 's' : ''}
+                  Your signature will be applied as verification to all signed assignments
                 </p>
               </div>
             </div>
