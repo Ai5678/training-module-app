@@ -639,19 +639,56 @@ const GroupTrainingSession = () => {
             </div>
           </div>
 
-          {/* Current Training Document */}
-          <div className="p-6 border-b">
-            <h3 className="text-lg font-semibold text-gray-800 mb-3">Training Document:</h3>
-            <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <FileText className="text-blue-600" size={24} />
-              <div className="flex-1">
-                <p className="font-medium text-gray-900">{currentTraining.name}</p>
-                <p className="text-sm text-gray-600">Revision: {currentTraining.currentRev} • {currentTraining.category}</p>
-              </div>
-              <button className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center gap-1">
-                <Eye size={14} />
-                Open
-              </button>
+          {/* Training Documents List */}
+          <div className="p-6 bg-white border-b">
+            <h3 className="text-lg font-semibold text-gray-700 mb-3">Training Documents to Sign:</h3>
+            <div className="space-y-2">
+              {currentEmployee.missingTrainings.map((training, idx) => (
+                <div
+                  key={training.id}
+                  className={`flex items-center gap-3 p-4 rounded-lg border ${
+                    idx === currentTrainingIndex
+                      ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-500'
+                      : idx < currentTrainingIndex
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-gray-50 border-gray-200'
+                  }`}
+                >
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                    idx < currentTrainingIndex
+                      ? 'bg-green-500 text-white'
+                      : idx === currentTrainingIndex
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    {idx < currentTrainingIndex ? (
+                      <CheckCircle2 size={18} />
+                    ) : (
+                      <span className="text-sm font-semibold">{idx + 1}</span>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className={`font-medium ${
+                      idx === currentTrainingIndex ? 'text-blue-900' : 'text-gray-900'
+                    }`}>
+                      {training.name}
+                    </p>
+                    <p className="text-sm text-gray-600">{training.currentRev} • {training.category}</p>
+                  </div>
+                  {idx === currentTrainingIndex && (
+                    <button className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                      <Eye size={16} />
+                      Open
+                    </button>
+                  )}
+                  {idx < currentTrainingIndex && (
+                    <span className="text-sm font-semibold text-green-600 flex items-center gap-1">
+                      <CheckCircle2 size={16} />
+                      Signed
+                    </span>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
