@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { teamMembers, templateTrainingMappings } from '../../data/sampleData';
+import { teamMembers, templateTrainingMappings, trainingDocs, employeeTrainingCompletions } from '../../data/sampleData';
 import AssignTrainingModal from './AssignTrainingModal';
 import QualifiedTemplatesModal from './QualifiedTemplatesModal';
 
@@ -43,19 +43,29 @@ const TeamLeaderView = () => {
       const template = templateTrainingMappings.find(t => t.templateId === selectedTemplate);
       if (template) {
         data = teamMembers.map(member => {
-          // Check if employee is already qualified for this template
-          const hasTemplate = member.qualified.some(q => q.startsWith(selectedTemplate));
-          
-          if (hasTemplate) {
-            return null; // Employee is fully qualified for this template
-          }
+          // Get employee's completed trainings
+          const completedTrainings = employeeTrainingCompletions[member.employeeId] || [];
 
-          // Find which specific trainings they're missing
-          const missingTrainings = template.requiredTrainings.filter(reqTraining => {
-            // This is simplified - in a real app, you'd check actual completion records
-            // For now, we'll simulate some employees having completed some trainings
-            return Math.random() > 0.3; // 70% chance of missing each training
-          });
+          // Find which specific trainings they're missing using employeeTrainingCompletions
+          const missingTrainings = template.requiredTrainings
+            .map(reqTraining => {
+              // Match by name and revision (handle "Rev X.X" vs "X.X" format)
+              const training = trainingDocs.find(d => {
+                const revisionMatch = d.currentRev === reqTraining.revision ||
+                                      `Rev ${d.currentRev}` === reqTraining.revision ||
+                                      d.currentRev === reqTraining.revision.replace('Rev ', '');
+                return d.name === reqTraining.name && revisionMatch;
+              });
+              return training;
+            })
+            .filter(training => {
+              // Include only trainings that haven't been completed
+              return training && !completedTrainings.includes(training.id);
+            })
+            .map(training => ({
+              name: training.name,
+              revision: training.currentRev.startsWith('Rev') ? training.currentRev : `Rev ${training.currentRev}`
+            }));
 
           if (missingTrainings.length === 0) {
             return null;
