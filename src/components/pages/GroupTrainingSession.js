@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { FileText, Users, CheckCircle2, AlertCircle, Search, ChevronRight, ChevronLeft, Printer, X, Eye, Plus } from 'lucide-react';
-import { trainingDocs, teamMembers, templateTrainingMappings, employeeSignatures as historicalSignatures } from '../../data/sampleData';
+import { trainingDocs, teamMembers, templateTrainingMappings, employeeTrainingCompletions } from '../../data/sampleData';
 
 const GroupTrainingSession = () => {
   // Main wizard state
@@ -118,23 +118,24 @@ const GroupTrainingSession = () => {
       return;
     }
 
-    // Perform gap analysis - find trainings that employee hasn't signed yet
+    // Perform gap analysis using employeeTrainingCompletions
+    const completedTrainings = employeeTrainingCompletions[employee.employeeId] || [];
+
+    // Find all required trainings for this template that haven't been completed
     const missingTrainings = selectedTemplate.requiredTrainings
       .map(reqTraining => {
-        return trainingDocs.find(d =>
-          d.name === reqTraining.name &&
-          d.currentRev === reqTraining.revision
-        );
+        // Match by name and revision (handle "Rev X.X" vs "X.X" format)
+        const training = trainingDocs.find(d => {
+          const revisionMatch = d.currentRev === reqTraining.revision ||
+                                `Rev ${d.currentRev}` === reqTraining.revision ||
+                                d.currentRev === reqTraining.revision.replace('Rev ', '');
+          return d.name === reqTraining.name && revisionMatch;
+        });
+        return training;
       })
       .filter(training => {
-        if (!training) return false;
-
-        // Check if employee has already signed this training in historical data
-        const signatures = historicalSignatures[training.id] || [];
-        const hasSignedTraining = signatures.some(sig => sig.employeeName === employee.name);
-
-        // Include in missing trainings only if NOT signed
-        return !hasSignedTraining;
+        // Include only trainings that haven't been completed
+        return training && !completedTrainings.includes(training.id);
       });
 
     // Add employee with their missing trainings

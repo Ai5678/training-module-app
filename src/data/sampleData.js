@@ -292,6 +292,31 @@ export const templateTrainingMappings = [
   }
 ];
 
+// Employee training completion status (for gap analysis)
+// Maps employeeId -> array of completed training document IDs
+export const employeeTrainingCompletions = {
+  'EMP001': [4, 5], // Alice: Cleanroom Procedures, Quality Control Basics
+  'EMP002': [1, 3, 4], // Bob: GMP Basic, Safety Protocol, Cleanroom
+  'EMP003': [], // Carol: None completed (for demo purposes)
+  'EMP004': [2, 6], // David: Equipment Cleaning, Documentation Standards
+  'EMP005': [1, 3], // Emily: GMP Basic, Safety Protocol
+  'EMP006': [1], // Frank: GMP Basic only
+  'EMP007': [], // Grace: None
+  'EMP008': [3, 4], // Henry: Safety Protocol, Cleanroom
+  'EMP009': [1, 2], // Isabella: GMP Basic, Equipment Cleaning
+  'EMP010': [1, 3, 6], // James: GMP Basic, Safety Protocol, Documentation
+  'EMP011': [], // Karen: None
+  'EMP012': [], // Lucas: None (good for demo)
+  'EMP013': [1, 6], // Maria: GMP Basic, Documentation
+  'EMP014': [2, 3], // Nathan: Equipment Cleaning, Safety Protocol
+  'EMP015': [], // Olivia: None
+  'EMP016': [1, 2, 3], // Patrick: GMP Basic, Equipment Cleaning, Safety Protocol
+  'EMP017': [4, 5], // Quinn: Cleanroom, Quality Control
+  'EMP018': [1, 3, 4], // Rachel: GMP Basic, Safety Protocol, Cleanroom
+  'EMP019': [], // Samuel: None (good for demo)
+  'EMP020': [2, 6], // Teresa: Equipment Cleaning, Documentation
+};
+
 // Employee signature records for training documents
 export const employeeSignatures = {
   1: [ // GMP Basic Training Rev 3.2
