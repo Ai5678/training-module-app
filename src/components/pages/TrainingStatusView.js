@@ -8,71 +8,90 @@ const TrainingStatusView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage] = useState(10);
 
-  // Flatten data: one row per employee-training combination
-  const trainingRecords = useMemo(() => {
-    const records = [];
+  // Group training records by employee
+  const groupedRecords = useMemo(() => {
+    const grouped = [];
     
     teamMembers.forEach(member => {
       const assignments = employeeTrainingAssignments[member.employeeId] || [];
       
-      assignments.forEach(assignment => {
-        records.push({
+      if (assignments.length > 0) {
+        grouped.push({
           employeeId: member.employeeId,
           employeeName: member.name,
           role: member.role,
-          ...assignment
+          assignments: assignments
         });
-      });
+      }
     });
     
-    return records;
+    return grouped;
   }, []);
 
-  // Filter records based on search
-  const filteredRecords = useMemo(() => {
+  // Filter grouped records based on search
+  const filteredGroupedRecords = useMemo(() => {
     if (!searchTerm.trim()) {
-      return trainingRecords;
+      return groupedRecords;
     }
 
     const term = searchTerm.toLowerCase();
     
-    return trainingRecords.filter(record => {
+    return groupedRecords.filter(group => {
       switch (searchType) {
         case 'document':
-          return record.documentName.toLowerCase().includes(term) ||
-                 record.documentId.toString().includes(term);
+          return group.assignments.some(a => 
+            a.documentName.toLowerCase().includes(term) ||
+            a.documentId.toString().includes(term)
+          );
         case 'template':
-          return record.templateNo && record.templateNo.toLowerCase().includes(term);
+          return group.assignments.some(a => 
+            a.templateNo && a.templateNo.toLowerCase().includes(term)
+          );
         case 'employee':
-          return record.employeeName.toLowerCase().includes(term) ||
-                 record.employeeId.toLowerCase().includes(term) ||
-                 record.role.toLowerCase().includes(term);
+          return group.employeeName.toLowerCase().includes(term) ||
+                 group.employeeId.toLowerCase().includes(term) ||
+                 group.role.toLowerCase().includes(term);
         case 'supervisor':
-          return record.supervisorVerification && 
-                 record.supervisorVerification.initials.toLowerCase().includes(term);
+          return group.assignments.some(a => 
+            a.supervisorVerification && 
+            a.supervisorVerification.initials.toLowerCase().includes(term)
+          );
         case 'all':
         default:
-          return record.employeeName.toLowerCase().includes(term) ||
-                 record.employeeId.toLowerCase().includes(term) ||
-                 record.role.toLowerCase().includes(term) ||
-                 record.documentName.toLowerCase().includes(term) ||
-                 (record.templateNo && record.templateNo.toLowerCase().includes(term)) ||
-                 (record.supervisorVerification && record.supervisorVerification.initials.toLowerCase().includes(term));
+          return group.employeeName.toLowerCase().includes(term) ||
+                 group.employeeId.toLowerCase().includes(term) ||
+                 group.role.toLowerCase().includes(term) ||
+                 group.assignments.some(a => 
+                   a.documentName.toLowerCase().includes(term) ||
+                   (a.templateNo && a.templateNo.toLowerCase().includes(term)) ||
+                   (a.supervisorVerification && a.supervisorVerification.initials.toLowerCase().includes(term))
+                 );
       }
     });
-  }, [trainingRecords, searchType, searchTerm]);
+  }, [groupedRecords, searchType, searchTerm]);
 
-  // Pagination
-  const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
-  const paginatedRecords = useMemo(() => {
+  // Calculate total records for pagination display
+  const totalRecords = useMemo(() => {
+    return filteredGroupedRecords.reduce((sum, group) => sum + group.assignments.length, 0);
+  }, [filteredGroupedRecords]);
+
+  // Pagination - paginate by employee groups
+  const totalPages = Math.ceil(filteredGroupedRecords.length / rowsPerPage);
+  const paginatedGroups = useMemo(() => {
     const startIndex = (currentPage - 1) * rowsPerPage;
-    return filteredRecords.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredRecords, currentPage, rowsPerPage]);
+    return filteredGroupedRecords.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredGroupedRecords, currentPage, rowsPerPage]);
 
   // Reset to page 1 when search changes
   useMemo(() => {
     setCurrentPage(1);
   }, [searchType, searchTerm]);
+
+  const formatInitials = (initials) => {
+    if (!initials) return null;
+    // Convert "AJ" to "A.J."
+    return initials.split('').join('.');
+  };
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -117,7 +136,7 @@ const TrainingStatusView = () => {
               <option value="all">All Fields</option>
               <option value="document">Document No.</option>
               <option value="template">Template No.</option>
-              <option value="employee">Eligible User</option>
+              <option value="employee">Employee Name</option>
               <option value="supervisor">Supervisor</option>
             </select>
           </div>
@@ -142,7 +161,7 @@ const TrainingStatusView = () => {
 
         {searchTerm && (
           <div className="mt-4 text-sm text-gray-600">
-            Found {filteredRecords.length} training record{filteredRecords.length !== 1 ? 's' : ''} matching your search
+            Found {totalRecords} training record{totalRecords !== 1 ? 's' : ''} matching your search
           </div>
         )}
       </div>
@@ -165,47 +184,59 @@ const TrainingStatusView = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Revision #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-l-2 border-gray-300" colSpan="2">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" colSpan="2">
                   Employee Signed
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase border-l-2 border-gray-300" colSpan="2">
-                  Verified By
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" colSpan="2">
+                  Supervisor Signed
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               </tr>
               <tr className="bg-gray-50">
                 <th colSpan="6"></th>
-                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 border-l-2 border-gray-300">Initials</th>
-                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">Date</th>
-                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400 border-l-2 border-gray-300">Initials</th>
-                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">Date</th>
+                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">sign</th>
+                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">date</th>
+                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">sign</th>
+                <th className="px-6 py-2 text-left text-xs font-medium text-gray-400">date</th>
                 <th></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedRecords.length > 0 ? (
-                paginatedRecords.map((record, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-mono text-gray-600">{record.employeeId}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{record.employeeName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{record.role}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{record.documentName}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{record.revision}</td>
-                    <td className="px-6 py-4 text-sm">{getDocumentStatusBadge(record.documentStatus)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-l-2 border-gray-300 font-mono">
-                      {record.employeeSignature ? record.employeeSignature.initials : <span className="text-gray-400">N/A</span>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {record.employeeSignature ? record.employeeSignature.dateTime : <span className="text-gray-400">N/A</span>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900 border-l-2 border-gray-300 font-mono">
-                      {record.supervisorVerification ? record.supervisorVerification.initials : <span className="text-gray-400">N/A</span>}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {record.supervisorVerification ? record.supervisorVerification.dateTime : <span className="text-gray-400">N/A</span>}
-                    </td>
-                    <td className="px-6 py-4 text-sm">{getStatusBadge(record.status)}</td>
-                  </tr>
+              {paginatedGroups.length > 0 ? (
+                paginatedGroups.map((group) => (
+                  group.assignments.map((assignment, assignmentIdx) => (
+                    <tr key={`${group.employeeId}-${assignmentIdx}`} className="hover:bg-gray-50">
+                      {assignmentIdx === 0 && (
+                        <>
+                          <td className="px-6 py-4 text-sm font-mono text-gray-600" rowSpan={group.assignments.length}>
+                            {group.employeeId}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900" rowSpan={group.assignments.length}>
+                            {group.employeeName}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600" rowSpan={group.assignments.length}>
+                            {group.role}
+                          </td>
+                        </>
+                      )}
+                      <td className="px-6 py-4 text-sm text-gray-900">{assignment.documentName}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{assignment.revision}</td>
+                      <td className="px-6 py-4 text-sm">{getDocumentStatusBadge(assignment.documentStatus)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                        {assignment.employeeSignature ? formatInitials(assignment.employeeSignature.initials) : <span className="text-gray-400">N/A</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {assignment.employeeSignature ? assignment.employeeSignature.dateTime : <span className="text-gray-400">N/A</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-mono">
+                        {assignment.supervisorVerification ? formatInitials(assignment.supervisorVerification.initials) : <span className="text-gray-400">N/A</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {assignment.supervisorVerification ? assignment.supervisorVerification.dateTime : <span className="text-gray-400">N/A</span>}
+                      </td>
+                      <td className="px-6 py-4 text-sm">{getStatusBadge(assignment.status)}</td>
+                    </tr>
+                  ))
                 ))
               ) : (
                 <tr>
@@ -219,10 +250,10 @@ const TrainingStatusView = () => {
         </div>
 
         {/* Pagination */}
-        {filteredRecords.length > 0 && (
+        {filteredGroupedRecords.length > 0 && (
           <div className="p-4 border-t bg-gray-50 flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filteredRecords.length)} of {filteredRecords.length} training records
+              Showing {((currentPage - 1) * rowsPerPage) + 1} to {Math.min(currentPage * rowsPerPage, filteredGroupedRecords.length)} of {filteredGroupedRecords.length} employees
             </div>
             <div className="flex items-center gap-2">
               <button
