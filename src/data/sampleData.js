@@ -383,48 +383,324 @@ export const employeeSignatures = {
   ],
 };
 
-// Training assignment records
-export const trainingAssignments = [
-  {
-    id: 1,
-    userId: 1,
-    userName: 'Alice Johnson',
-    trainingId: 1,
-    trainingName: 'GMP Basic Training',
-    revision: 'Rev 3.2',
-    assignedBy: 'John Smith',
-    assignedDate: '2025-09-15',
-    dueDate: '2025-10-15',
-    status: 'pending',
-    priority: 'normal',
-    notificationSent: true
-  },
-  {
-    id: 2,
-    userId: 1,
-    userName: 'Alice Johnson',
-    trainingId: 2,
-    trainingName: 'Equipment Cleaning SOP',
-    revision: 'Rev 2.1',
-    assignedBy: 'John Smith',
-    assignedDate: '2025-09-20',
-    dueDate: '2025-10-20',
-    status: 'in-progress',
-    priority: 'normal',
-    notificationSent: true
-  },
-  {
-    id: 3,
-    userId: 2,
-    userName: 'Bob Wilson',
-    trainingId: 4,
-    trainingName: 'Cleanroom Procedures',
-    revision: 'Rev 2.5',
-    assignedBy: 'Jane Doe',
-    assignedDate: '2025-09-25',
-    dueDate: '2025-10-25',
-    status: 'pending',
-    priority: 'high',
-    notificationSent: true
-  }
-];
+// Training assignment records with detailed status tracking
+// Organized by employee for easier lookup
+export const employeeTrainingAssignments = {
+  'EMP001': [ // Alice Johnson
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-01',
+      employeeSignature: { initials: 'AJ', dateTime: '2025-09-05 14:30' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-06 09:15' },
+      status: 'completed'
+    },
+    {
+      documentId: 2,
+      documentName: 'Equipment Cleaning SOP',
+      revision: '2.1',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-09-20',
+      employeeSignature: { initials: 'AJ', dateTime: '2025-09-24 10:20' },
+      supervisorVerification: null,
+      status: 'awaiting_verification'
+    },
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-10-01',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP002': [ // Bob Wilson
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-02',
+      employeeSignature: { initials: 'BW', dateTime: '2025-09-06 15:45' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-07 11:30' },
+      status: 'completed'
+    },
+    {
+      documentId: 4,
+      documentName: 'Cleanroom Procedures',
+      revision: '2.5',
+      documentStatus: 'Active',
+      templateNo: 'DO1674',
+      assignedDate: '2025-09-25',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP003': [ // Carol Martinez
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-03',
+      employeeSignature: { initials: 'CM', dateTime: '2025-09-07 13:20' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-08 10:45' },
+      status: 'completed'
+    },
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-09-10',
+      employeeSignature: { initials: 'CM', dateTime: '2025-09-26 16:00' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-27 09:30' },
+      status: 'completed'
+    },
+    {
+      documentId: 6,
+      documentName: 'Documentation Standards',
+      revision: '1.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1862',
+      assignedDate: '2025-09-15',
+      employeeSignature: { initials: 'CM', dateTime: '2025-09-20 14:15' },
+      supervisorVerification: null,
+      status: 'awaiting_verification'
+    }
+  ],
+  'EMP004': [ // David Chen
+    {
+      documentId: 2,
+      documentName: 'Equipment Cleaning SOP',
+      revision: '2.1',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-08-20',
+      employeeSignature: { initials: 'DC', dateTime: '2025-08-26 11:45' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-08-27 08:20' },
+      status: 'completed'
+    },
+    {
+      documentId: 5,
+      documentName: 'Quality Control Basics',
+      revision: '1.5',
+      documentStatus: 'Active',
+      templateNo: 'DO1528',
+      assignedDate: '2025-09-05',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP005': [ // Emily Rodriguez
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-05',
+      employeeSignature: { initials: 'ER', dateTime: '2025-09-10 09:30' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-11 14:50' },
+      status: 'completed'
+    },
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-09-12',
+      employeeSignature: { initials: 'ER', dateTime: '2025-09-30 10:15' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-31 08:40' },
+      status: 'completed'
+    },
+    {
+      documentId: 2,
+      documentName: 'Equipment Cleaning SOP',
+      revision: '2.1',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-10-01',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    },
+    {
+      documentId: 6,
+      documentName: 'Documentation Standards',
+      revision: '1.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1862',
+      assignedDate: '2025-10-05',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP006': [ // Frank Thompson
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-08',
+      employeeSignature: { initials: 'FT', dateTime: '2025-09-12 15:20' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-13 10:10' },
+      status: 'completed'
+    },
+    {
+      documentId: 4,
+      documentName: 'Cleanroom Procedures',
+      revision: '2.5',
+      documentStatus: 'Active',
+      templateNo: 'DO1674',
+      assignedDate: '2025-09-20',
+      employeeSignature: { initials: 'FT', dateTime: '2025-09-28 13:45' },
+      supervisorVerification: null,
+      status: 'awaiting_verification'
+    },
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-10-02',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP007': [ // Grace Lee
+    {
+      documentId: 5,
+      documentName: 'Quality Control Basics',
+      revision: '1.5',
+      documentStatus: 'Active',
+      templateNo: 'DO1528',
+      assignedDate: '2025-08-25',
+      employeeSignature: { initials: 'GL', dateTime: '2025-09-02 11:00' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-03 09:25' },
+      status: 'completed'
+    },
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-10',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP008': [ // Henry Park
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-01',
+      employeeSignature: { initials: 'HP', dateTime: '2025-09-16 12:30' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-17 15:45' },
+      status: 'completed'
+    },
+    {
+      documentId: 4,
+      documentName: 'Cleanroom Procedures',
+      revision: '2.5',
+      documentStatus: 'Active',
+      templateNo: 'DO1674',
+      assignedDate: '2025-09-18',
+      employeeSignature: { initials: 'HP', dateTime: '2025-09-25 10:50' },
+      supervisorVerification: null,
+      status: 'awaiting_verification'
+    },
+    {
+      documentId: 2,
+      documentName: 'Equipment Cleaning SOP',
+      revision: '2.1',
+      documentStatus: 'Active',
+      templateNo: 'DO1007',
+      assignedDate: '2025-10-01',
+      employeeSignature: null,
+      supervisorVerification: null,
+      status: 'pending'
+    }
+  ],
+  'EMP009': [ // Isabella Martinez
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-08-28',
+      employeeSignature: { initials: 'IM', dateTime: '2025-09-05 14:20' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-06 11:35' },
+      status: 'completed'
+    },
+    {
+      documentId: 7,
+      documentName: 'GMP Basic Training',
+      revision: '3.1',
+      documentStatus: 'Archived',
+      templateNo: 'DO1679',
+      assignedDate: '2024-12-10',
+      employeeSignature: { initials: 'IM', dateTime: '2024-12-15 09:30' },
+      supervisorVerification: { initials: 'JD', dateTime: '2024-12-16 13:20' },
+      status: 'completed'
+    }
+  ],
+  'EMP010': [ // James Brown
+    {
+      documentId: 1,
+      documentName: 'GMP Basic Training',
+      revision: '3.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-01',
+      employeeSignature: { initials: 'JB', dateTime: '2025-09-08 16:45' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-09 10:20' },
+      status: 'completed'
+    },
+    {
+      documentId: 3,
+      documentName: 'Safety Protocol',
+      revision: '4.0',
+      documentStatus: 'Active',
+      templateNo: 'DO1679',
+      assignedDate: '2025-09-10',
+      employeeSignature: { initials: 'JB', dateTime: '2025-09-18 11:30' },
+      supervisorVerification: { initials: 'JS', dateTime: '2025-09-19 14:15' },
+      status: 'completed'
+    },
+    {
+      documentId: 6,
+      documentName: 'Documentation Standards',
+      revision: '1.2',
+      documentStatus: 'Active',
+      templateNo: 'DO1862',
+      assignedDate: '2025-09-22',
+      employeeSignature: { initials: 'JB', dateTime: '2025-09-28 09:50' },
+      supervisorVerification: { initials: 'JD', dateTime: '2025-09-29 13:40' },
+      status: 'completed'
+    }
+  ]
+};

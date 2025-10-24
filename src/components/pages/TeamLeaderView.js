@@ -139,7 +139,7 @@ const TeamLeaderView = () => {
       <div className="bg-white rounded-lg shadow">
         <div className="p-6 border-b">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Production Staff Training Status
+            Production Staff Eligibility Status
             {selectedTemplate && ' - Training Gaps Analysis'}
           </h2>
           

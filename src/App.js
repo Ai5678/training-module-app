@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { FileText, BookOpen, UsersRound, GraduationCap, Settings, Gauge } from 'lucide-react';
+import { FileText, BookOpen, UsersRound, GraduationCap, Settings, Gauge, ClipboardCheck } from 'lucide-react';
 import EmployeeDashboard from './components/pages/EmployeeDashboard';
 import TrainingDocumentsList from './components/pages/TrainingDocumentsList';
 import TeamLeaderView from './components/pages/TeamLeaderView';
 import TrainingSignOffModal from './components/pages/TrainingSignOffModal';
 import AdminView from './components/pages/AdminView';
 import GroupTrainingSession from './components/pages/GroupTrainingSession';
+import TrainingStatusView from './components/pages/TrainingStatusView';
 
 const TrainingModuleUI = () => {
   const [currentPage, setCurrentPage] = useState('employee-dashboard');
@@ -40,6 +41,11 @@ const TrainingModuleUI = () => {
       title: 'Team Management',
       component: <TeamLeaderView />,
       icon: <UsersRound size={20} />
+    },
+    'training-status': {
+      title: 'Training Status',
+      component: <TrainingStatusView />,
+      icon: <ClipboardCheck size={20} />
     },
     'group-training': {
       title: 'Group Training Session',
@@ -104,6 +110,17 @@ const TrainingModuleUI = () => {
             >
               <UsersRound size={20} />
               <span>Team Management</span>
+            </button>
+            <button
+              onClick={() => navigateToPage('training-status')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                currentPage === 'training-status'
+                  ? 'bg-blue-50 text-blue-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <ClipboardCheck size={20} />
+              <span>Training Status</span>
             </button>
             <button
               onClick={() => navigateToPage('group-training')}
